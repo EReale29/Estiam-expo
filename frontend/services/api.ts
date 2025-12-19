@@ -2,6 +2,7 @@ import { Trip, DashboardResponse } from '@/types/models';
 import { http } from './http';
 import { auth } from './auth';
 import { OFFLINE, TripPayload } from './offline';
+import { config } from '@/utils/env';
 
 export interface TripInput {
   title: string;
