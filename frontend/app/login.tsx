@@ -64,77 +64,79 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
           <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }, formWidth]}>
-            <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.glassStroke }]}>
-              <Ionicons name="arrow-back" size={24} color={palette.text} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: palette.text }]}>{isLoginMode ? t('auth.loginTitle') : t('auth.registerTitle')}</Text>
+            <Text style={[styles.headerTitle, { color: palette.text }]}>{t('auth.loginTitle')}</Text>
           </LinearGradient>
-          <View style={[styles.form, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, formWidth]}>
-            {!isLoginMode && (
+          <View style={styles.formWrapper}>
+            <View style={[styles.form, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, formWidth]}>
+              {!isLoginMode && (
+                <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+                  <Ionicons name="person-outline" size={24} color={palette.icon} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: palette.text }]}
+                    placeholder={t('auth.username')}
+                    placeholderTextColor={palette.muted}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    editable={!isLoading}
+                  />
+                </View>
+              )}
+
               <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-                <Ionicons name="person-outline" size={24} color={palette.icon} style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={24} color={palette.icon} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { color: palette.text }]}
-                  placeholder={t('auth.username')}
+                  placeholder={t('auth.email')}
                   placeholderTextColor={palette.muted}
-                  value={username}
-                  onChangeText={setUsername}
+                  value={email}
+                  keyboardType="email-address"
+                  onChangeText={setEmail}
                   autoCapitalize="none"
                   editable={!isLoading}
                 />
               </View>
-            )}
 
-            <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-              <Ionicons name="mail-outline" size={24} color={palette.icon} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: palette.text }]}
-                placeholder={t('auth.email')}
-                placeholderTextColor={palette.muted}
-                value={email}
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
-            </View>
+              <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+                <Ionicons name="lock-closed-outline" size={24} color={palette.icon} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.passwordInput, { color: palette.text }]}
+                  placeholder={t('auth.password')}
+                  placeholderTextColor={palette.muted}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoComplete="password"
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
 
-            <View>
-              <Ionicons name="lock-closed-outline" size={24} color={palette.icon} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { backgroundColor: palette.surface, borderColor: palette.border, color: palette.text }]}
-                placeholder={t('auth.password')}
-                placeholderTextColor={palette.muted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoComplete="password"
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={[styles.eyeButton, { backgroundColor: palette.tint }]}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={24} color={palette.background} />
+                </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={[styles.eyeButton, { backgroundColor: palette.tint }]}>
-                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={24} color={palette.background} />
+              <TouchableOpacity onPress={handleSubmit} style={[styles.submitButton, isLoading && styles.submitButtonDisabled]} disabled={isLoading}>
+                <LinearGradient colors={palette.actionGradient} style={styles.submitButtonGradient}>
+                  <Text style={[styles.submitButtonText, { color: palette.text }]}>{isLoading ? t('general.loading') : isLoginMode ? t('auth.loginCta') : t('auth.registerCta')}</Text>
+                </LinearGradient>
               </TouchableOpacity>
-            </View>
 
-            <TouchableOpacity onPress={handleSubmit} style={[styles.submitButton, isLoading && styles.submitButtonDisabled]} disabled={isLoading}>
-              <LinearGradient colors={palette.actionGradient} style={styles.submitButtonGradient}>
-                <Text style={[styles.submitButtonText, { color: palette.text }]}>{isLoading ? t('general.loading') : isLoginMode ? t('auth.loginCta') : t('auth.registerCta')}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setIsLoginMode(!isLoginMode)} style={styles.switchModeButton} disabled={isLoading}>
-              <Text style={[styles.switchModeText, { color: palette.tint }]}>{isLoginMode ? t('auth.switchToRegister') : t('auth.switchToLogin')}</Text>
-            </TouchableOpacity>
-
-            {isLoginMode && (
-              <TouchableOpacity style={styles.forgotPasswordButton}>
-                <Text style={[styles.forgotPasswordText, { color: palette.muted }]}>{t('auth.forgot')}</Text>
+              <TouchableOpacity onPress={() => setIsLoginMode(!isLoginMode)} style={styles.switchModeButton} disabled={isLoading}>
+                <Text style={[styles.switchModeText, { color: palette.tint }]}>{isLoginMode ? t('auth.switchToRegister') : t('auth.switchToLogin')}</Text>
               </TouchableOpacity>
-            )}
+
+              {isLoginMode && (
+                <TouchableOpacity style={styles.forgotPasswordButton}>
+                  <Text style={[styles.forgotPasswordText, { color: palette.muted }]}>{t('auth.forgot')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -151,8 +153,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 24,
+    padding: 24,
     alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   header: {
     paddingHorizontal: 24,
@@ -163,24 +166,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  formWrapper: {
+    flexGrow: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   form: {
-    padding: 24,
-    flex: 1,
+    padding: 16,
     borderRadius: 20,
     marginTop: -20,
     borderWidth: 1,
@@ -192,8 +193,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingHorizontal: 12,
+    marginBottom: 14,
     borderWidth: 1,
   },
   inputIcon: {
@@ -204,8 +205,12 @@ const styles = StyleSheet.create({
     height: 50,
     fontSize: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 16,
+    borderWidth: 0,
+    paddingHorizontal: 12,
+    textAlign: 'center',
+  },
+  passwordInput: {
+    paddingRight: 44,
   },
   eyeButton: {
     padding: 4,

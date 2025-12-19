@@ -71,6 +71,26 @@ CREATE TABLE IF NOT EXISTS comments (
   text TEXT,
   created_at INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS trip_activities (
+  id TEXT PRIMARY KEY,
+  trip_id TEXT REFERENCES trips(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  date TEXT,
+  time TEXT,
+  description TEXT,
+  created_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS trip_journal_entries (
+  id TEXT PRIMARY KEY,
+  trip_id TEXT REFERENCES trips(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT,
+  date TEXT,
+  time TEXT,
+  created_at INTEGER
+);
 `;
 
 function ensureColumn(table, column, definition) {
@@ -87,6 +107,8 @@ export function runMigrations() {
   ensureColumn("users", "push_token", "TEXT");
   ensureColumn("trips", "city", "TEXT");
   ensureColumn("trips", "country", "TEXT");
+  ensureColumn("trips", "notes", "TEXT");
+  ensureColumn("trip_activities", "time", "TEXT");
 }
 
 export { db, dbPath };

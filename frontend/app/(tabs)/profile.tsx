@@ -15,6 +15,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { API } from '@/services/api';
 import { userApi } from '@/services/user';
 import { auth } from '@/services/auth';
+import { useIsFocused } from '@react-navigation/native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -28,15 +29,43 @@ export default function ProfileScreen() {
   const { width } = useWindowDimensions();
   const isWide = width > 900;
   const layoutWidth = { width: '100%', maxWidth: isWide ? 1100 : undefined, alignSelf: 'center' };
+  const [journalsByTrip, setJournalsByTrip] = useState<Array<{ id: string; title: string; entries: Array<any> }>>([]);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     setAvatar(user?.avatar || '');
   }, [user]);
 
+  useEffect(() => {
+    // load trips and their journal entries when profile is visible
+    let mounted = true;
+    const loadJournals = async () => {
+      try {
+        const trips = await API.getTrips();
+        const results = await Promise.all(
+          trips.map(async (t: any) => {
+            try {
+              const full = await API.getTrip(t.id);
+              return { id: t.id, title: t.title, entries: full.journalEntries || [] };
+            } catch (e) {
+              return { id: t.id, title: t.title, entries: [] };
+            }
+          })
+        );
+        if (!mounted) return;
+        setJournalsByTrip(results.filter((r) => (r.entries || []).length > 0));
+      } catch (err) {
+        // ignore
+      }
+    };
+    if (isFocused) loadJournals();
+    return () => { mounted = false; };
+  }, [isFocused]);
+
   const stats = [
     { label: t('profile.statsTrips'), value: data?.stats.trips ?? 0, icon: 'map-outline' as const, colors: palette.heroGradient as const },
     { label: t('profile.statsPhotos'), value: data?.stats.photos ?? 0, icon: 'camera' as const, colors: palette.actionGradient as const },
-    { label: t('profile.statsFavorites'), value: 0, icon: 'heart-outline' as const, colors: palette.deepGradient as const },
+    { label: t('profile.statsFavorites'), value: data?.stats.likes ?? 0, icon: 'heart-outline' as const, colors: palette.deepGradient as const },
   ];
 
   const pickAvatar = async () => {
@@ -118,7 +147,29 @@ export default function ProfileScreen() {
           </View>
         </LinearGradient>
 
-        <View style={[styles.content, { backgroundColor: palette.background }, layoutWidth]} />
+        <View style={[styles.content, { backgroundColor: palette.background }, layoutWidth]}>
+          <View style={{ padding: 16 }}>
+            <Text style={[styles.formTitle, { color: palette.text }]}>Journaux de bord</Text>
+            {journalsByTrip.length === 0 ? (
+              <Text style={{ color: palette.muted, marginTop: 8 }}>Aucun journal trouvé</Text>
+            ) : (
+              journalsByTrip.map((j) => (
+                <TouchableOpacity
+                  key={j.id}
+                  style={[styles.menuItem, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}
+                  onPress={() => router.push(`/journal/${j.id}`)}>
+                  <View style={[styles.menuItemIcon, { backgroundColor: palette.surface, borderColor: palette.border }]}> 
+                    <Ionicons name="book-outline" size={20} color={palette.icon} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.menuItemTitle, { color: palette.text }]} numberOfLines={1}>{j.title || 'Sans titre'}</Text>
+                    <Text style={[styles.menuItemSubTitle, { color: palette.muted }]}>{j.entries.length} entrée(s)</Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -131,7 +182,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 128,
+    paddingBottom: 16,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
     shadowOffset: { width: 0, height: 10 },
@@ -162,7 +213,7 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     borderRadius: 24,
-    padding: 24,
+    padding: 16,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,

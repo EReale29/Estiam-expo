@@ -126,39 +126,43 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
 
-        <View style={styles.section}>
-          <Text style={{ ...styles.sectionTitle, paddingHorizontal: 12, color: palette.text }}>
-            {t('home.quickActions')}
-          </Text>
-          <View style={[styles.quickActionsGrid, isWide && styles.quickActionsGridWide]}>
-            <TouchableOpacity onPress={() => router.push('/modal/add-trip')}>
-              <LinearGradient colors={palette.actionGradient} style={[styles.quickActionCard, { shadowColor: palette.shadow }]}>
-                <Ionicons name="add-circle-outline" size={24} color="#fff" />
-                <Text style={styles.quickActionLabel}>{t('home.newTrip')}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+        <View style={[styles.homeContent, { backgroundColor: palette.background }, layoutWidth]}>
+          <View style={[styles.section, styles.quickActionsSection, { borderColor: palette.border }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: palette.text }]}>{t('home.quickActions')}</Text>
+            </View>
+            <View style={[styles.sectionDivider, { borderColor: palette.border }]} />
+            <View style={[styles.quickActionsGrid, isWide && styles.quickActionsGridWide]}>
+              <TouchableOpacity onPress={() => router.push('/modal/add-trip')}>
+                <LinearGradient colors={palette.actionGradient} style={[styles.quickActionCard, { shadowColor: palette.shadow }]}>
+                  <Ionicons name="add-circle-outline" size={24} color="#fff" />
+                  <Text style={styles.quickActionLabel}>{t('home.newTrip')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.push('/(tabs)/trips')}>
-              <LinearGradient colors={palette.deepGradient} style={[styles.quickActionCard, { shadowColor: palette.shadow }]}>
-                <Ionicons name="camera-outline" size={24} color="#fff" />
-                <Text style={styles.quickActionLabel}>{t('home.addPhoto')}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/trips')}>
+                <LinearGradient colors={palette.deepGradient} style={[styles.quickActionCard, { shadowColor: palette.shadow }]}>
+                  <Ionicons name="camera-outline" size={24} color="#fff" />
+                  <Text style={styles.quickActionLabel}>{t('home.addPhoto')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/trips', params: { view: 'map' } })}>
-              <LinearGradient colors={palette.heroGradient} style={[styles.quickActionCard, { shadowColor: palette.shadow }]}>
-                <Ionicons name="map-outline" size={24} color="#fff" />
-                <Text style={styles.quickActionLabel}>{t('home.explore')}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/trips', params: { view: 'map' } })}>
+                <LinearGradient colors={palette.heroGradient} style={[styles.quickActionCard, { shadowColor: palette.shadow }]}>
+                  <Ionicons name="map-outline" size={24} color="#fff" />
+                  <Text style={styles.quickActionLabel}>{t('home.explore')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={{ paddingHorizontal: 12 }}>
-            <Text style={{ ...styles.sectionTitle, paddingHorizontal: 12, color: palette.text }}>
-              {t('home.recentActivity')}
-            </Text>
+        <View style={[styles.homeContent, { backgroundColor: palette.background }, layoutWidth]}>
+          <View style={[styles.section, styles.activitySection, { borderColor: palette.border }]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: palette.text }]}>{t('home.recentActivity')}</Text>
+            </View>
+            <View style={[styles.sectionDivider, { borderColor: palette.border }]} />
             {activities.length === 0 && !isLoading ? (
               <Text style={[styles.activityEmpty, { color: palette.muted }]}>{t('general.loading')}</Text>
             ) : (
@@ -258,6 +262,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 8,
     borderBottomWidth: 1,
+  },
+  quickActionsSection: {
+    borderBottomWidth: 0,
+    paddingBottom: 12,
+  },
+  activitySection: {
+    borderBottomWidth: 0,
+    paddingBottom: 12,
+  },
+  sectionDivider: {
+    borderBottomWidth: 1,
+    marginHorizontal: 12,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
