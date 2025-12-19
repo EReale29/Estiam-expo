@@ -18,19 +18,17 @@ export default function EditProfileModal() {
   const palette = Colors[colorScheme ?? 'light'];
   const router = useRouter();
 
-  const [name, setName] = useState(user?.name || '');
   const [username, setUsername] = useState(user?.username || '');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setName(user?.name || '');
     setUsername(user?.username || '');
   }, [user]);
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const updated = await userApi.updateProfile({ name, username });
+      const updated = await userApi.updateProfile({ username });
       await auth.saveUser(updated);
       await refreshAuth();
       router.back();
@@ -45,23 +43,10 @@ export default function EditProfileModal() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.border }]}>
-          <Ionicons name="arrow-back" size={18} color={palette.text} />
-        </TouchableOpacity>
         <Text style={[styles.title, { color: palette.text }]}>{t('profile.edit')}</Text>
-        <View style={{ width: 40 }} />
       </View>
 
       <View style={[styles.formCard, { borderColor: palette.border, backgroundColor: palette.card, shadowColor: palette.shadow }]}>
-        <Text style={[styles.label, { color: palette.muted }]}>{t('profile.nameLabel')}</Text>
-        <TextInput
-          style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-          value={name}
-          onChangeText={setName}
-          placeholder={t('profile.nameLabel')}
-          placeholderTextColor={palette.muted}
-        />
-
         <Text style={[styles.label, { color: palette.muted }]}>{t('profile.username')}</Text>
         <TextInput
           style={[styles.input, { borderColor: palette.border, color: palette.text }]}
@@ -92,14 +77,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   title: {
     fontSize: 20,

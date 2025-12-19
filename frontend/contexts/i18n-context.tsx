@@ -71,7 +71,6 @@ const translations: Record<Language, TranslationValue> = {
     },
     profile: {
       title: 'Profil',
-      nameLabel: 'Nom',
       edit: 'Éditer le profil',
       username: "Nom d'utilisateur",
       avatar: 'Photo de profil',
@@ -207,7 +206,6 @@ const translations: Record<Language, TranslationValue> = {
     },
     profile: {
       title: 'Profile',
-      nameLabel: 'Name',
       edit: 'Edit profile',
       username: 'Username',
       avatar: 'Profile photo',
