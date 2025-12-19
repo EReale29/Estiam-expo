@@ -15,6 +15,13 @@ npm run migrate   # initialise la base SQLite
 npm start        # démarre l’API sur http://localhost:4000
 ```
 
+Principaux endpoints (tous nécessitent un `Authorization: Bearer <accessToken>` sauf Auth) :
+- Auth : `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`
+- Utilisateurs : `GET /users/:id`
+- Trips : `GET /dashboard`, `GET /trips`, `POST /trips`, `GET /trips/:id`, `PUT /trips/:id`, `DELETE /trips/:id`
+- Interactions : `POST /trips/:id/like`, `POST /trips/:id/comments`, `DELETE /trips/:id/comments/:commentId`
+- Upload : `POST /uploads` (multipart `file`)
+
 Exemples rapides (assurez-vous d’avoir défini vos variables d’environnement avant) :
 ```bash
 # Inscription
@@ -54,6 +61,8 @@ curl -X POST http://localhost:4000/trips/<tripId>/comments \\
 cd frontend
 # Installez les dépendances natives (React Native Maps, DateTimePicker, etc.)
 npm install
+# Pointez l'app vers l'API
+export EXPO_PUBLIC_MOCK_BACKEND_URL=http://localhost:4000
 npx expo start   # lance Expo
 ```
 
