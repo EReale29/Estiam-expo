@@ -7,8 +7,11 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  username?: string;
   avatar?: string;
   roles: string[];
+  notificationsEnabled?: boolean;
+  pushToken?: string | null;
 }
 
 export interface AuthTokens {

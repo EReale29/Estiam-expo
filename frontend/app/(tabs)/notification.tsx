@@ -34,6 +34,7 @@ export default function NotificationScreen() {
     setBadgeCount,
     clearBadge,
     refreshScheduled,
+    updatePreferences,
   } = useNotifications(
     (notification) => addTestResult(`✅ Notification reçue: ${notification.request.content.title}`),
     (data) => addTestResult(`👆 Notification cliquée: ${JSON.stringify(data)}`)
@@ -49,6 +50,7 @@ export default function NotificationScreen() {
 
   const handleInitialize = async () => {
     addTestResult('🔄 Initialisation des notifications ...');
+    await updatePreferences({ enabled: true });
     const token = await initialize();
     if (token) {
       addTestResult(`✅ Token obtenu: ${token.token.substring(0, 20)}...`);

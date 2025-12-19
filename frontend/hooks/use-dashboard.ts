@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DashboardResponse } from '@/types/models';
 import { API } from '@/services/api';
+import { events } from '@/services/events';
 
 export const useDashboard = () => {
   const [data, setData] = useState<DashboardResponse | null>(null);
@@ -22,6 +23,8 @@ export const useDashboard = () => {
 
   useEffect(() => {
     loadDashboard();
+    const unsubscribe = events.onTripsChanged(loadDashboard);
+    return () => unsubscribe();
   }, [loadDashboard]);
 
   return {

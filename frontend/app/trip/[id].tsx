@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -18,6 +18,7 @@ export default function TripDetailScreen() {
   const { t } = useI18n();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
@@ -42,6 +43,41 @@ export default function TripDetailScreen() {
     fetchTrip();
   }, [id]);
 
+  const handleToggleFavorite = async () => {
+    if (!id || !trip) return;
+    try {
+      setIsActionLoading(true);
+      const res = await API.toggleLike(id);
+      setTrip({ ...trip, liked: res.liked, likesCount: res.likesCount });
+    } catch (err) {
+      Alert.alert('Erreur', err instanceof Error ? err.message : 'Impossible de mettre à jour le favori');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    Alert.alert('Supprimer', 'Voulez-vous supprimer ce voyage ?', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Supprimer',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setIsActionLoading(true);
+            await API.deleteTrip(id);
+            router.back();
+          } catch (err) {
+            Alert.alert('Erreur', err instanceof Error ? err.message : 'Suppression impossible');
+          } finally {
+            setIsActionLoading(false);
+          }
+        },
+      },
+    ]);
+  };
+
   const cover =
     (trip?.image && { uri: trip.image }) ||
     (trip?.photos?.[0] && { uri: trip.photos[0] }) ||
@@ -49,10 +85,38 @@ export default function TripDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
-      <TouchableOpacity style={[styles.backButton, { borderColor: palette.border }, layoutWidth]} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={20} color={palette.text} />
-        <Text style={[styles.backText, { color: palette.text }]}>{t('trips.openDetails')}</Text>
-      </TouchableOpacity>
+      <View style={[styles.topBar, layoutWidth]}>
+        <TouchableOpacity style={[styles.backButton, { borderColor: palette.border }]} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={20} color={palette.text} />
+          <Text style={[styles.backText, { color: palette.text }]}>{t('trips.openDetails')}</Text>
+        </TouchableOpacity>
+
+        {trip && (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.iconButton, { borderColor: palette.border }]}
+              onPress={handleToggleFavorite}
+              disabled={isActionLoading}>
+              <Ionicons
+                name={trip.liked ? 'heart' : 'heart-outline'}
+                size={18}
+                color={trip.liked ? palette.danger : palette.text}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.iconButton, { borderColor: palette.border }]}
+              onPress={() => router.push({ pathname: '/modal/add-trip', params: { id } })}>
+              <Ionicons name="pencil" size={18} color={palette.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.iconButton, { borderColor: palette.border }]}
+              onPress={handleDelete}
+              disabled={isActionLoading}>
+              <Ionicons name="trash" size={18} color={palette.danger} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       {isLoading && <ActivityIndicator color={palette.tint} style={{ marginTop: 12 }} />}
       {error && <Text style={[styles.error, { color: palette.danger }, layoutWidth]}>{error}</Text>}
@@ -76,6 +140,20 @@ export default function TripDetailScreen() {
               <Text style={[styles.subtitle, { color: palette.muted }]}>
                 {trip.startDate} - {trip.endDate}
               </Text>
+            </View>
+            <View style={styles.metaRow}>
+              <View style={[styles.metaChip, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+                <Ionicons name="camera-outline" size={16} color={palette.icon} />
+                <Text style={[styles.metaText, { color: palette.muted }]}>{trip.photosCount ?? trip.photos?.length ?? 0} photos</Text>
+              </View>
+              <View style={[styles.metaChip, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+                <Ionicons name="heart" size={16} color={palette.danger} />
+                <Text style={[styles.metaText, { color: palette.muted }]}>{trip.likesCount ?? 0}</Text>
+              </View>
+              <View style={[styles.metaChip, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+                <Ionicons name="chatbubbles-outline" size={16} color={palette.icon} />
+                <Text style={[styles.metaText, { color: palette.muted }]}>{trip.commentsCount ?? 0}</Text>
+              </View>
             </View>
             {!!trip.description && <Text style={[styles.description, { color: palette.text }]}>{trip.description}</Text>}
 
@@ -114,16 +192,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     padding: 16,
     borderBottomWidth: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     alignSelf: 'center',
+    width: '100%',
+    paddingHorizontal: 12,
+    paddingTop: 8,
   },
   backText: {
     fontWeight: '600',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  iconButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 12,
   },
   cover: {
     height: 240,
@@ -150,7 +257,26 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
   subtitle: {
+  },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  metaText: {
+    fontWeight: '600',
   },
   description: {
     marginTop: 12,

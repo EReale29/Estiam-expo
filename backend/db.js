@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT UNIQUE NOT NULL,
   avatar TEXT,
   roles TEXT,
+  notifications_enabled INTEGER DEFAULT 0,
+  push_token TEXT,
   created_at INTEGER
 );
 
@@ -37,12 +39,21 @@ CREATE TABLE IF NOT EXISTS trips (
   owner_id TEXT REFERENCES users(id) ON DELETE CASCADE,
   title TEXT,
   destination TEXT,
+  city TEXT,
+  country TEXT,
   startDate TEXT,
   endDate TEXT,
   description TEXT,
   image TEXT,
   location_lat REAL,
   location_lng REAL,
+  created_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS trip_photos (
+  id TEXT PRIMARY KEY,
+  trip_id TEXT REFERENCES trips(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
   created_at INTEGER
 );
 
@@ -62,8 +73,20 @@ CREATE TABLE IF NOT EXISTS comments (
 );
 `;
 
+function ensureColumn(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  const exists = columns.some((c) => c.name === column);
+  if (!exists) {
+    db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`).run();
+  }
+}
+
 export function runMigrations() {
   db.exec(migrations);
+  ensureColumn("users", "notifications_enabled", "INTEGER DEFAULT 0");
+  ensureColumn("users", "push_token", "TEXT");
+  ensureColumn("trips", "city", "TEXT");
+  ensureColumn("trips", "country", "TEXT");
 }
 
 export { db, dbPath };

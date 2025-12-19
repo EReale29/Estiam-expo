@@ -25,18 +25,19 @@ export const useNotifications = (
     const loadData = async () => {
         try {
 
-            const [token, prefs, badge, scheduledList] = await Promise.all([
+            const [token, prefs, badge, scheduledList, permissionStatus] = await Promise.all([
                 notifications.getToken(),
                 notifications.getPreferences(),
                 notifications.getBadge(),
                 notifications.getScheduled(),
+                Notifications.getPermissionsAsync(),
             ]);
 
             setPushToken(token);
             setPreferences(prefs);
             setBadgeCount(badge);
             setScheduled(scheduledList);
-            setHasPermission(!!token);
+            setHasPermission(permissionStatus.status === 'granted');
         } finally {
             setIsLoading(false);
         }
@@ -53,6 +54,8 @@ export const useNotifications = (
         setIsLoading(true);
         try {
             const token = await notifications.initialize();
+            const prefs = await notifications.getPreferences();
+            setPreferences(prefs);
             if (token) {
                 setPushToken(token);
                 setHasPermission(true);
@@ -98,6 +101,10 @@ export const useNotifications = (
         const updated = { ...current, ...updates };
         await notifications.savePreferences(updated);
         setPreferences(updated);
+        if (updates.enabled === false) {
+            setPushToken(null);
+            setHasPermission(false);
+        }
     }, [preferences]);
 
     const updateBadge = useCallback(async (count: number) => {

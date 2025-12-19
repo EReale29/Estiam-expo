@@ -58,7 +58,7 @@ export default function HomeScreen() {
           <View style={[styles.headerTop, { borderColor: palette.glassStroke }]}>
             <View>
               <Text style={[styles.greetingText, { color: palette.muted }]}>{t('home.greeting')}</Text>
-              <Text style={[styles.firstnameText, { color: palette.text }]}>{user?.name || 'TravelMate'}</Text>
+              <Text style={[styles.firstnameText, { color: palette.text }]}>{user?.username || user?.name || 'TravelMate'}</Text>
             </View>
             <TouchableOpacity
               style={[styles.notificationBtn, { backgroundColor: palette.glass, borderColor: palette.glassStroke }]}

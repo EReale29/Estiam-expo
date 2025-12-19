@@ -43,7 +43,13 @@ const TripCard = ({ trip, onPress }: { trip: Trip; onPress: () => void }) => {
             {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color="#6b7280" />
+        <View style={styles.tripMeta}>
+          <View style={styles.metaChip}>
+            <Ionicons name="camera-outline" size={14} color="#6b7280" />
+            <Text style={styles.metaText}>{trip.photosCount ?? trip.photos?.length ?? 0}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#6b7280" />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -70,6 +76,8 @@ export default function TripsScreen() {
     () => [
       { label: t('trips.filters.all'), value: 'all' },
       { label: t('trips.filters.upcoming'), value: 'upcoming' },
+      { label: t('trips.filters.ongoing'), value: 'ongoing' },
+      { label: t('trips.filters.favorites'), value: 'favorites' },
       { label: t('trips.filters.past'), value: 'past' },
     ],
     [t]
@@ -331,8 +339,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  tripMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   tripDateText: {
     fontSize: 14,
+  },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+  },
+  metaText: {
+    fontSize: 13,
+    color: '#4b5563',
   },
   mapContainer: {
     height: 380,
