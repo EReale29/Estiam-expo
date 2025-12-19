@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/contexts/auth-context';
-import { isValidEmail, isValidName, isValidPassword } from '@/utils/validation';
+import { isValidEmail, isValidPassword, isValidUsername } from '@/utils/validation';
 import { useI18n } from '@/contexts/i18n-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -24,7 +24,7 @@ export default function LoginScreen() {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -42,8 +42,8 @@ export default function LoginScreen() {
       Alert.alert(t('auth.invalidPassword'));
       return;
     }
-    if (!isLoginMode && !isValidName(name)) {
-      Alert.alert(t('auth.invalidName'));
+    if (!isLoginMode && !isValidUsername(username)) {
+      Alert.alert(t('auth.invalidUsername'));
       return;
     }
 
@@ -51,7 +51,7 @@ export default function LoginScreen() {
       if (isLoginMode) {
         await login({ email, password });
       } else {
-        await register({ email, password, name });
+        await register({ email, password, username, name: username });
       }
       await refreshAuth();
       router.replace('/(tabs)');
@@ -77,11 +77,11 @@ export default function LoginScreen() {
                 <Ionicons name="person-outline" size={24} color={palette.icon} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { color: palette.text }]}
-                  placeholder={t('auth.name')}
+                  placeholder={t('auth.username')}
                   placeholderTextColor={palette.muted}
-                  value={name}
-                  onChangeText={setName}
-                  autoCapitalize="words"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
                   editable={!isLoading}
                 />
               </View>

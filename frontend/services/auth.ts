@@ -23,7 +23,8 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData extends LoginCredentials {
-  name: string;
+  username: string;
+  name?: string;
 }
 
 interface StoredAuthState {

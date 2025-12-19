@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -22,10 +22,15 @@ import { API } from '@/services/api';
 import { isEndDateAfterStart, isValidDestination, isValidName } from '@/utils/validation';
 import { useI18n } from '@/contexts/i18n-context';
 import { useRouter } from 'expo-router';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function AddTripModal() {
   const router = useRouter();
   const { t } = useI18n();
+  const colorScheme = useColorScheme();
+  const palette = Colors[colorScheme ?? 'light'];
+  const styles = useMemo(() => createStyles(palette), [palette]);
 
   const [tripTitle, setTripTitle] = useState('');
   const [destination, setDestination] = useState('');
@@ -38,6 +43,8 @@ export default function AddTripModal() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [suggestions, setSuggestions] = useState<Array<{ label: string; lat: number; lng: number }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const isPhysicalDevice = Device.isDevice;
 
@@ -109,15 +116,28 @@ export default function AddTripModal() {
   };
 
   const getLocation = async () => {
-    if (!ensureDevice('Localisation')) return;
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         showPermissionAlert('Permission Localisation refusée', t('addTrip.permissionLocation'));
         return;
       }
-      const location = await Location.getCurrentPositionAsync({});
-      const address = await Location.reverseGeocodeAsync(location.coords);
+
+      let position = await Location.getLastKnownPositionAsync();
+      if (!position) {
+        position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          maximumAge: 10000,
+          timeout: 5000,
+        });
+      }
+
+      if (!position) {
+        Alert.alert('Erreur', t('addTrip.permissionLocation'));
+        return;
+      }
+
+      const address = await Location.reverseGeocodeAsync(position.coords);
       if (address.length > 0) {
         const addr = address[0];
         const city = addr.city || addr.name || '';
@@ -125,9 +145,11 @@ export default function AddTripModal() {
         const formattedAddress = `${city}${city && country ? ', ' : ''}${country}`.trim();
         setDestination(formattedAddress);
       }
-      setLocation({ lat: location.coords.latitude, lng: location.coords.longitude });
+      setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
     } catch (error) {
       console.log('Error getting location: ', error);
+      Alert.alert('Erreur', t('addTrip.permissionLocation'));
+      setLocation(undefined);
     }
   };
 
@@ -146,6 +168,68 @@ export default function AddTripModal() {
 
     return { cover: uploadedPhotos[0] ?? '', photos: uploadedPhotos };
   };
+
+  const geocodeDestination = async (): Promise<{ lat: number; lng: number } | undefined> => {
+    const query = destination.trim();
+    if (!query) return undefined;
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'TravelMateApp/1.0 (expo)',
+        },
+      });
+      if (!response.ok) {
+        return undefined;
+      }
+      const data = (await response.json()) as Array<{ lat: string; lon: string }>;
+      if (!data || data.length === 0) {
+        return undefined;
+      }
+      const first = data[0];
+      return { lat: parseFloat(first.lat), lng: parseFloat(first.lon) };
+    } catch {
+      return undefined;
+    }
+  };
+
+  useEffect(() => {
+    const query = destination.trim();
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(query)}`;
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'TravelMateApp/1.0 (expo)' },
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as Array<{ display_name: string; lat: string; lon: string; address?: { city?: string; town?: string; village?: string; country?: string } }>;
+        setSuggestions(
+          data
+            .map((item) => {
+              const city = item.address?.city || item.address?.town || item.address?.village;
+              const country = item.address?.country;
+              const label = city && country ? `${city}, ${country}` : item.display_name;
+              return {
+                label,
+                lat: parseFloat(item.lat),
+                lng: parseFloat(item.lon),
+              };
+            })
+            .filter((s) => s.label.includes(','))
+        );
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [destination]);
 
   const handleSaveTrip = async () => {
     if (!isValidName(tripTitle)) {
@@ -166,6 +250,11 @@ export default function AddTripModal() {
       setUploadProgress(0);
 
       const { cover, photos } = await uploadImages();
+      const resolvedLocation = location || (await geocodeDestination());
+      if (!resolvedLocation) {
+        Alert.alert('Erreur', 'Ville, pays non reconnu');
+        return;
+      }
 
       const newTrip = await API.createTrip({
         title: tripTitle,
@@ -175,7 +264,7 @@ export default function AddTripModal() {
         description,
         image: cover,
         photos,
-        location,
+        location: resolvedLocation,
       });
 
       Alert.alert('Succès', t('addTrip.success'), [
@@ -186,7 +275,8 @@ export default function AddTripModal() {
       ]);
       return newTrip;
     } catch (error) {
-      Alert.alert('Erreur', t('addTrip.failure'));
+      const message = error instanceof Error ? error.message : t('addTrip.failure');
+      Alert.alert('Erreur', message);
     } finally {
       setIsUploading(false);
     }
@@ -203,10 +293,10 @@ export default function AddTripModal() {
           <View style={styles.photoUpload}>
             <View style={styles.photoButtons}>
               <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-                <Ionicons name="camera" size={32} color="#a855f7" />
+                <Ionicons name="camera" size={32} color={palette.tint} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-                <Ionicons name="image" size={32} color="#ec4899" />
+                <Ionicons name="image" size={32} color={palette.secondary} />
               </TouchableOpacity>
             </View>
             <Text style={styles.photoText}>{t('home.addPhoto')}</Text>
@@ -221,25 +311,48 @@ export default function AddTripModal() {
             placeholder={t('addTrip.titleLabel')}
             value={tripTitle}
             onChangeText={setTripTitle}
+            placeholderTextColor={palette.muted}
           />
         </View>
 
         <View style={styles.section}>
           <Text style={styles.label}>{t('addTrip.destination')}</Text>
           <View style={styles.inputWithIcon}>
-            <Ionicons name="location-outline" size={16} color="#6b7280" />
+            <Ionicons name="location-outline" size={16} color={palette.muted} />
             <TextInput
               style={styles.inputFlex}
               placeholder={t('addTrip.destinationHint')}
               value={destination}
               onChangeText={setDestination}
+              placeholderTextColor={palette.muted}
             />
             <TouchableOpacity onPress={getLocation}>
               <Text style={styles.gpsButton}>
-                <Ionicons name="location-outline" size={16} color="#6366f1" /> {t('addTrip.useLocation')}
+                <Ionicons name="location-outline" size={16} color={palette.tint} /> {t('addTrip.useLocation')}
               </Text>
             </TouchableOpacity>
           </View>
+          {isSearching && <Text style={[styles.suggestionStatus, { color: palette.muted }]}>{t('general.loading')}</Text>}
+          {!isSearching && suggestions.length > 0 && (
+            <View style={[styles.suggestionsBox, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+              {suggestions.map((item) => (
+                <TouchableOpacity
+                  key={`${item.label}-${item.lat}`}
+                  style={styles.suggestionItem}
+                  onPress={() => {
+                    setDestination(item.label);
+                    setLocation({ lat: item.lat, lng: item.lng });
+                    setSuggestions([]);
+                  }}
+                >
+                  <Ionicons name="location" size={16} color={palette.tint} />
+                  <Text style={[styles.suggestionText, { color: palette.text }]} numberOfLines={1}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -247,14 +360,14 @@ export default function AddTripModal() {
             <View style={styles.dateColumn}>
               <Text style={styles.label}>{t('addTrip.startDate')}</Text>
               <TouchableOpacity style={styles.inputWithIcon} onPress={() => setShowStartPicker(true)}>
-                <Ionicons name="calendar-outline" size={24} color="#6b7280" />
+                <Ionicons name="calendar-outline" size={24} color={palette.muted} />
                 <Text style={styles.inputFlex}>{formatDate(startDate) || t('addTrip.startDate')}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.dateColumn}>
               <Text style={styles.label}>{t('addTrip.endDate')}</Text>
               <TouchableOpacity style={styles.inputWithIcon} onPress={() => setShowEndPicker(true)}>
-                <Ionicons name="calendar-outline" size={24} color="#6b7280" />
+                <Ionicons name="calendar-outline" size={24} color={palette.muted} />
                 <Text style={styles.inputFlex}>{formatDate(endDate) || t('addTrip.endDate')}</Text>
               </TouchableOpacity>
             </View>
@@ -293,7 +406,7 @@ export default function AddTripModal() {
             multiline
             numberOfLines={4}
             textAlignVertical="top"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={palette.muted}
           />
         </View>
 
@@ -301,14 +414,14 @@ export default function AddTripModal() {
           <View style={styles.progressCard}>
             <View style={styles.progressHeader}>
               <View style={styles.progressInfo}>
-                <Ionicons name="cloud-upload-outline" size={24} color="#a855f7" />
+                <Ionicons name="cloud-upload-outline" size={24} color={palette.tint} />
                 <Text style={styles.progressText}>{t('general.loading')}</Text>
               </View>
               <Text style={styles.progressPercent}>{uploadProgress}%</Text>
             </View>
             <View style={styles.progressBarBg}>
               <LinearGradient
-                colors={['#a855f7', '#ec4899']}
+                colors={palette.actionGradient}
                 style={[styles.progressBarFill, { width: `${uploadProgress}%` }]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -318,7 +431,7 @@ export default function AddTripModal() {
         )}
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveTrip} disabled={isUploading}>
-          <LinearGradient colors={['#a855f7', '#ec4899']} style={styles.gradientButton} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+          <LinearGradient colors={palette.actionGradient} style={styles.gradientButton} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
             <Text style={styles.saveButtonText}>{isUploading ? t('addTrip.uploading') : t('addTrip.create')}</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -328,151 +441,179 @@ export default function AddTripModal() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  photoUpload: {
-    backgroundColor: '#faf5ff',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#e9d5ff',
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 12,
-    paddingVertical: 16,
-  },
-  photoButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  photoText: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  photoSubText: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginTop: 4,
-  },
-  input: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#111827',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    gap: 12,
-  },
-  gpsButton: {
-    color: '#a855f7',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  inputFlex: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  dateColumn: {
-    flex: 1,
-  },
-  textArea: {
-    height: 100,
-    paddingTop: 12,
-  },
-  progressCard: {
-    backgroundColor: '#faf5ff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  progressInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressText: {
-    fontSize: 14,
-    color: '#111827',
-  },
-  progressPercent: {
-    fontSize: 14,
-    color: '#a855f7',
-    fontWeight: '600',
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: '#e9d5ff',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-  },
-  saveButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  gradientButton: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const createStyles = (palette: typeof Colors.light) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: palette.background,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: palette.text,
+    },
+    section: {
+      marginBottom: 24,
+    },
+    label: {
+      fontSize: 14,
+      color: palette.muted,
+      marginBottom: 8,
+      fontWeight: '600',
+    },
+    photoUpload: {
+      backgroundColor: palette.surface,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: palette.border,
+      padding: 12,
+    },
+    photoButtons: {
+      flexDirection: 'row',
+      gap: 16,
+      marginBottom: 12,
+      paddingVertical: 16,
+    },
+    photoButton: {
+      width: 64,
+      height: 64,
+      borderRadius: 16,
+      backgroundColor: palette.card,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: palette.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    photoText: {
+      fontSize: 14,
+      color: palette.text,
+    },
+    photoSubText: {
+      fontSize: 12,
+      color: palette.muted,
+      marginTop: 4,
+    },
+    input: {
+      backgroundColor: palette.surface,
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      fontSize: 16,
+      color: palette.text,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    inputWithIcon: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: palette.surface,
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: palette.border,
+      gap: 12,
+    },
+    gpsButton: {
+      color: palette.tint,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    inputFlex: {
+      flex: 1,
+      fontSize: 16,
+      color: palette.text,
+    },
+    dateRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    dateColumn: {
+      flex: 1,
+    },
+    textArea: {
+      height: 100,
+      paddingTop: 12,
+    },
+    progressCard: {
+      backgroundColor: palette.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    progressHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    progressInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    progressText: {
+      fontSize: 14,
+      color: palette.text,
+    },
+    progressPercent: {
+      fontSize: 14,
+      color: palette.tint,
+      fontWeight: '600',
+    },
+    progressBarBg: {
+      height: 8,
+      backgroundColor: palette.border,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+    },
+    saveButton: {
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    gradientButton: {
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    saveButtonText: {
+      color: palette.background,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    suggestionsBox: {
+      marginTop: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+      overflow: 'hidden',
+    },
+    suggestionItem: {
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    suggestionText: {
+      flex: 1,
+      fontSize: 14,
+    },
+    suggestionStatus: {
+      marginTop: 6,
+      fontSize: 12,
+    },
+  });

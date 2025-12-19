@@ -6,7 +6,54 @@
 ```bash
 cd backend
 npm install
+# Configure your secrets in a `.env` file
+# PORT=4000
+# JWT_SECRET=change-me
+# JWT_REFRESH_SECRET=change-me-too
+# DATABASE_PATH=./data/app.db
+npm run migrate   # initialise la base SQLite
 npm start        # démarre l’API sur http://localhost:4000
+```
+
+Principaux endpoints (tous nécessitent un `Authorization: Bearer <accessToken>` sauf Auth) :
+- Auth : `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`
+- Utilisateurs : `GET /users/:id`
+- Trips : `GET /dashboard`, `GET /trips`, `POST /trips`, `GET /trips/:id`, `PUT /trips/:id`, `DELETE /trips/:id`
+- Interactions : `POST /trips/:id/like`, `POST /trips/:id/comments`, `DELETE /trips/:id/comments/:commentId`
+- Upload : `POST /uploads` (multipart `file`)
+
+Exemples rapides (assurez-vous d’avoir défini vos variables d’environnement avant) :
+```bash
+# Inscription
+curl -X POST http://localhost:4000/auth/register \\
+  -H "Content-Type: application/json" \\
+  -d '{"email":"me@test.com","password":"secret123","name":"Me","username":"metest"}'
+
+# Connexion
+curl -X POST http://localhost:4000/auth/login \\
+  -H "Content-Type: application/json" \\
+  -d '{"email":"me@test.com","password":"secret123"}'
+
+# Refresh
+curl -X POST http://localhost:4000/auth/refresh \\
+  -H "Content-Type: application/json" \\
+  -d '{"refreshToken":"<refresh token>"}'
+
+# Créer un voyage
+curl -X POST http://localhost:4000/trips \\
+  -H "Authorization: Bearer <access token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"title":"Week-end","destination":"Paris, France","startDate":"2024-06-01"}'
+
+# Like / Unlike
+curl -X POST http://localhost:4000/trips/<tripId>/like \\
+  -H "Authorization: Bearer <access token>"
+
+# Commenter
+curl -X POST http://localhost:4000/trips/<tripId>/comments \\
+  -H "Authorization: Bearer <access token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"text":"Super !"}'
 ```
 
 ### Frontend (Expo Router)
@@ -14,6 +61,8 @@ npm start        # démarre l’API sur http://localhost:4000
 cd frontend
 # Installez les dépendances natives (React Native Maps, DateTimePicker, etc.)
 npm install
+# Pointez l'app vers l'API
+export EXPO_PUBLIC_MOCK_BACKEND_URL=http://localhost:4000
 npx expo start   # lance Expo
 ```
 
@@ -40,4 +89,4 @@ npx expo start   # lance Expo
 ## Limites connues
 - L’installation des paquets peut échouer derrière certains proxies (erreur 403). Utilisez un registry autorisé ou ré-exécutez `npm install` avec le flag `--registry`.
 - Les nouveaux modules natifs (`react-native-maps`, `@react-native-community/datetimepicker`) doivent être installés sur l’environnement cible avant de lancer Expo.
-- Le backend mock persiste en JSON local (`backend/data/trips.json`) et ne gère pas de droits complexes : à adapter pour un environnement prod.
+- Le backend persiste désormais en SQLite local (voir `backend/db.js`) et nécessite que les variables d’environnement JWT soient définies avant de démarrer.
