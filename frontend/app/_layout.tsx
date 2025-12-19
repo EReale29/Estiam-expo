@@ -11,7 +11,7 @@ import { StyleSheet, TouchableOpacity, Text, View } from 'react-native';
 import { useAuth, AuthProvider } from '@/contexts/auth-context';
 import { LanguageProvider } from '@/contexts/i18n-context';
 import { Colors } from '@/constants/theme';
-import { ThemeProvider } from '@/contexts/theme-context';
+import { AppThemeProvider } from '@/contexts/theme-context';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -155,13 +155,13 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
+    <AppThemeProvider>
       <LanguageProvider>
         <AuthProvider>
             <RootLayoutContent />
         </AuthProvider>
       </LanguageProvider>
-    </ThemeProvider>
+    </AppThemeProvider>
   );
   
 }
