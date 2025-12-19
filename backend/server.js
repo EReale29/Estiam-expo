@@ -30,6 +30,55 @@ function loadTrips() {
     return [];
   }
 }
+
+function getUserFromRequest(req) {
+  const { email, userId, roles = ["student"] } = req.user || {};
+  const safeEmail = email || "user@example.com";
+  const nameFromEmail = safeEmail.split("@")[0] || "TravelMate";
+
+  return {
+    id: userId || uuidv4(),
+    name: nameFromEmail,
+    email: safeEmail,
+    roles,
+  };
+}
+
+function buildDashboard(tripsList = []) {
+  const now = Date.now();
+  const stats = {
+    trips: tripsList.length,
+    photos: tripsList.reduce((acc, trip) => acc + (trip.photos?.length || 0), 0),
+    countries: Array.from(
+      new Set(
+        tripsList
+          .map((trip) => trip.destination?.split(",")?.[1]?.trim())
+          .filter(Boolean)
+      )
+    ).length,
+  };
+
+  const upcomingTrips = tripsList
+    .filter((trip) => {
+      if (!trip.startDate) return false;
+      const start = new Date(trip.startDate).getTime();
+      return !Number.isNaN(start) && start >= now;
+    })
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+    .slice(0, 5);
+
+  const activities = tripsList
+    .map((trip) => ({
+      id: trip.id,
+      text: `Mise à jour de "${trip.title}"`,
+      time: trip.endDate || trip.startDate || "",
+      icon: "airplane-outline",
+    }))
+    .slice(0, 10);
+
+  return { stats, upcomingTrips, activities };
+}
+
 function saveTrips(trips) {
   fs.writeFileSync(DB_PATH, JSON.stringify(trips, null, 2), "utf8");
 }
@@ -69,6 +118,16 @@ const authenticateToken = (req, res, next) => {
 };
 
 app.get("/health", (req, res) => res.json({ ok: true, ts: Date.now() }));
+
+app.get("/me", authenticateToken, (req, res) => {
+  const user = getUserFromRequest(req);
+  res.json({ user });
+});
+
+app.get("/dashboard", authenticateToken, (req, res) => {
+  const payload = buildDashboard(trips);
+  res.json(payload);
+});
 
 // Route d'inscription
 app.post("/auth/register", (req, res) => {
@@ -203,6 +262,13 @@ app.post("/trips", authenticateToken, (req, res) => {
   trips.push(newTrip);
   saveTrips(trips);
   return res.status(201).json(newTrip);
+});
+
+app.get("/trips/:id", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const found = trips.find((trip) => trip.id === id);
+  if (!found) return res.status(404).json({ error: "Trip not found" });
+  return res.json(found);
 });
 
 app.post("/trips/:id/photos", authenticateToken, (req, res) => {

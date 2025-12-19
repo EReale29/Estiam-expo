@@ -5,7 +5,7 @@ import { notifications, NotificationPreferences, PushToken } from "@/services/no
 
 export const useNotifications = (
     onReceived?: (notification: Notifications.Notification) => void,
-    onTapped?: (datam: any) => void
+    onTapped?: (data: any) => void
 ) => {
     const [pushToken, setPushToken] = useState<PushToken | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +72,7 @@ export const useNotifications = (
         const id = await notifications.schedule(title, body, date, data);
         await refreshScheduled();
         return id;
-    }, []);
+    }, [refreshScheduled]);
 
 
 
@@ -80,13 +80,13 @@ export const useNotifications = (
         const id_ = await notifications.scheduleTripReminder(id, title, date);
         await refreshScheduled();
         return id_;
-    }, []);
+    }, [refreshScheduled]);
 
 
     const cancel = useCallback(async (id: string) => {
         await notifications.cancel(id);
         await refreshScheduled();
-    }, []);
+    }, [refreshScheduled]);
 
     const cancelAll = useCallback(async () => {
         await notifications.cancelAll();

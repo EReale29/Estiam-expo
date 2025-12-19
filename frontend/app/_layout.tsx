@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, TouchableOpacity, Text, View } from 'react-native';
 import { useAuth, AuthProvider } from '@/contexts/auth-context';
+import { LanguageProvider } from '@/contexts/i18n-context';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -24,29 +25,23 @@ function RootLayoutContent() {
 
   // check auth
   useEffect(() => {
-    if (isLoading) {
+    if (isLoading) return;
+    const root = segments[0];
+    const isProtected = root === '(tabs)' || root === 'modal' || root === 'trip';
+    const isLogin = root === 'login';
+
+    if (!isAuthenticated && isProtected) {
+      router.replace('/login');
       return;
     }
-    const inAuthGroup = segments[0] === '(tabs)' || segments[0] === 'modal';
-    const isLoginpage = segments[0] === 'login';
-    if (!isAuthenticated && inAuthGroup) {
-      return router.replace('/login');
-    } else if (isAuthenticated && isLoginpage) {
-      return router.replace('/(tabs)');
-
-    } else {
-      console.log('✅ [ROUTER] Route access granted');
-
+    if (isAuthenticated && isLogin) {
+      router.replace('/(tabs)');
     }
+  }, [segments, isLoading, isAuthenticated, router]);
 
-  }, [segments, isLoading, isAuthenticated, router])
-
-
-    useEffect(() => {
-      if (segments[0] === '(tabs)' && ! isLoading && !isAuthenticated) {
-        refreshAuth();
-      }
-  }, [segments, isLoading, isAuthenticated, router])
+  useEffect(() => {
+    refreshAuth();
+  }, [refreshAuth]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -63,12 +58,12 @@ function RootLayoutContent() {
       {/*Banner Sync */}
 
       {isOnline && pendingCount > 0 && (
-        <TouchableOpacity>
+        <TouchableOpacity style={styles.syncBanner} onPress={syncNow}>
           <Ionicons
             name={isSyncing ? "sync" : "sync-outline"}
             size={16}
             color="#fff"
-          />E
+          />
           <Text style={styles.bannerText}>
             {isSyncing
               ? 'Synchronisation...'
@@ -80,6 +75,7 @@ function RootLayoutContent() {
       <Stack>
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="trip/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
@@ -118,9 +114,11 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-        <RootLayoutContent />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+          <RootLayoutContent />
+      </AuthProvider>
+    </LanguageProvider>
   );
   
 }

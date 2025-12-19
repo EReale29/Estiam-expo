@@ -1,4 +1,4 @@
-import { auth, LoginCredentials, RegisterData, User } from "@/services/auth";
+import { auth, AuthTokens, LoginCredentials, RegisterData, User } from "@/services/auth";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
 
 interface AuthContextType {
@@ -6,8 +6,8 @@ interface AuthContextType {
     isLoading: boolean;
     isAuthenticated: boolean;
     error: string | null;
-    login: (credentials: LoginCredentials) => Promise<{ user: User, tokens: any }>;
-    register: (data: RegisterData) => Promise<{ user: User, tokens: any }>;
+    login: (credentials: LoginCredentials) => Promise<{ user: User, tokens: AuthTokens }>;
+    register: (data: RegisterData) => Promise<{ user: User, tokens: AuthTokens }>;
     logout: () => Promise<void>;
     refreshAuth: () => Promise<void>;
 }
@@ -26,8 +26,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
             setError(null);
             const state = await auth.getAuthState();
-            setUser(state.user);
-            setIsAuthenticated(state.isAuthenticated);
+            let nextUser = state.user;
+            if (state.isAuthenticated && !nextUser) {
+                nextUser = await auth.loadProfile();
+            }
+            setUser(nextUser);
+            setIsAuthenticated(!!state.isAuthenticated && !!nextUser);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Auth check failed');
             setIsAuthenticated(false);
@@ -39,14 +43,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         checkAuth();
-    }, []);
+    }, [checkAuth]);
 
     const login = useCallback(async (credentials: LoginCredentials) => {
         try {
             setIsLoading(true);
             setError(null);
             const { user, tokens } = await auth.login(credentials);
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await auth.loadProfile().catch(() => undefined);
             const state = await auth.getAuthState();
 
             setUser(state.user);
@@ -71,9 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
             setError(null);
             const { user, tokens } = await auth.register(data);
-            // Attendre un peu pour que SecureStore sauvegarde
-            await new Promise(resolve => setTimeout(resolve, 100));
-            // Vérifier l'état après sauvegarde
+            await auth.loadProfile().catch(() => undefined);
             const state = await auth.getAuthState();
             setUser(state.user);
             setIsAuthenticated(state.isAuthenticated);

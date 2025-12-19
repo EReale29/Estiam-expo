@@ -22,14 +22,15 @@ export const useOffline = () => {
         });
 
         loadPendingCount();
+        OFFLINE.pingBackend().then(setIsOnline);
 
         return () => unsubscribe();
-    }, []);
+    }, [syncNow, loadPendingCount, pendingCount]);
 
-    const loadPendingCount = async () => {
+    const loadPendingCount = useCallback(async () => {
         const queue = await OFFLINE.getQueue();
         setPendingCount(queue.length);
-    }
+    }, []);
 
     const syncNow = useCallback(async () => {
         if (isSyncing || !isOnline) return;
@@ -46,7 +47,7 @@ export const useOffline = () => {
         } finally {
             setIsSyncing(false);
         }
-    }, [isOnline, isSyncing]);
+    }, [isOnline, isSyncing, loadPendingCount]);
 
     return {
         isOnline,
