@@ -107,7 +107,6 @@ export default function TripDetailScreen() {
               style={[styles.iconButton, { borderColor: palette.border }]}
               onPress={() => router.push({ pathname: '/modal/add-trip', params: { id } })}>
               <Ionicons name="pencil" size={18} color={palette.text} />
-              <Text style={[styles.backText, { color: palette.text }]}>{t('trips.editTrip')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.iconButton, { borderColor: palette.border }]}
