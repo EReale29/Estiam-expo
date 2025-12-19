@@ -152,6 +152,21 @@ export default function AddTripModal() {
     return { cover: uploadedPhotos[0] ?? '', photos: uploadedPhotos };
   };
 
+  const geocodeDestination = async (): Promise<{ lat: number; lng: number } | undefined> => {
+    if (!destination.trim()) return undefined;
+    try {
+      const results = await Location.geocodeAsync(destination);
+      if (results.length === 0) {
+        Alert.alert('Erreur', t('addTrip.destinationFormat'));
+        return undefined;
+      }
+      const best = results[0];
+      return { lat: best.latitude, lng: best.longitude };
+    } catch {
+      return undefined;
+    }
+  };
+
   const handleSaveTrip = async () => {
     if (!isValidName(tripTitle)) {
       Alert.alert(t('addTrip.required'));
@@ -171,6 +186,7 @@ export default function AddTripModal() {
       setUploadProgress(0);
 
       const { cover, photos } = await uploadImages();
+      const resolvedLocation = location || (await geocodeDestination());
 
       const newTrip = await API.createTrip({
         title: tripTitle,
@@ -180,7 +196,7 @@ export default function AddTripModal() {
         description,
         image: cover,
         photos,
-        location,
+        location: resolvedLocation,
       });
 
       Alert.alert('Succès', t('addTrip.success'), [
