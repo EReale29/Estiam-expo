@@ -376,28 +376,6 @@ export default function AddTripModal() {
               </Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>{t('addTrip.city')}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={t('addTrip.city')}
-                value={city}
-                onChangeText={setCity}
-                placeholderTextColor={palette.muted}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>{t('addTrip.country')}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={t('addTrip.country')}
-                value={country}
-                onChangeText={setCountry}
-                placeholderTextColor={palette.muted}
-              />
-            </View>
-          </View>
           {isSearching && <Text style={[styles.suggestionStatus, { color: palette.muted }]}>{t('general.loading')}</Text>}
           {!isSearching && suggestions.length > 0 && (
             <View style={[styles.suggestionsBox, { backgroundColor: palette.surface, borderColor: palette.border }]}>
@@ -407,9 +385,6 @@ export default function AddTripModal() {
                   style={styles.suggestionItem}
                   onPress={() => {
                     setDestinationSearch(item.label);
-                    const [maybeCity, maybeCountry] = item.label.split(',').map((v) => v.trim());
-                    setCity(maybeCity || '');
-                    setCountry(maybeCountry || '');
                     setLocation({ lat: item.lat, lng: item.lng });
                     setSuggestions([]);
                   }}
