@@ -69,7 +69,7 @@ export default function LoginScreen() {
           showsHorizontalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }, formWidth]}>
-            <Text style={[styles.headerTitle, { color: palette.text }]}>{isLoginMode ? t('auth.loginTitle') : t('auth.registerTitle')}</Text>
+            <Text style={[styles.headerTitle, { color: palette.text }]}>{t('auth.loginTitle')}</Text>
           </LinearGradient>
           <View style={[styles.form, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, formWidth]}>
             {!isLoginMode && (
@@ -173,8 +173,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   form: {
-    padding: 24,
-    flex: 1,
+    padding: 16,
     borderRadius: 20,
     marginTop: -20,
     borderWidth: 1,
@@ -186,7 +185,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     marginBottom: 14,
     borderWidth: 1,
   },
@@ -198,8 +197,8 @@ const styles = StyleSheet.create({
     height: 50,
     fontSize: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 16,
+    borderWidth: 0,
+    paddingHorizontal: 12,
     textAlign: 'center',
   },
   eyeButton: {
