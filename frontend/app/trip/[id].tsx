@@ -130,7 +130,7 @@ export default function TripDetailScreen() {
 
   const parseDateValue = (value?: string) => {
     if (value) {
-      const parsed = new Date(value);
+      const parsed = new Date(`${value}T00:00`);
       if (!Number.isNaN(parsed.getTime())) return parsed;
     }
     return new Date();
@@ -147,6 +147,19 @@ export default function TripDetailScreen() {
     }
     base.setSeconds(0, 0);
     return base;
+  };
+
+  const formatDateForStorage = (date: Date) => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatTimeForStorage = (date: Date) => {
+    const hours = `${date.getHours()}`.padStart(2, '0');
+    const minutes = `${date.getMinutes()}`.padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
   const handleSubmitActivity = async () => {
@@ -176,29 +189,25 @@ export default function TripDetailScreen() {
   const handleActivityDateChange = (_event: any, selectedDate?: Date) => {
     setShowActivityDatePicker(false);
     if (!selectedDate) return;
-    const iso = selectedDate.toISOString().slice(0, 10);
-    setActivityForm((prev) => ({ ...prev, date: iso }));
+    setActivityForm((prev) => ({ ...prev, date: formatDateForStorage(selectedDate) }));
   };
 
   const handleActivityTimeChange = (_event: any, selectedTime?: Date) => {
     setShowActivityTimePicker(false);
     if (!selectedTime) return;
-    const timeString = selectedTime.toTimeString().slice(0, 5);
-    setActivityTime(timeString);
+    setActivityTime(formatTimeForStorage(selectedTime));
   };
 
   const handleJournalDateChange = (_event: any, selectedDate?: Date) => {
     setShowJournalDatePicker(false);
     if (!selectedDate) return;
-    const iso = selectedDate.toISOString().slice(0, 10);
-    setNotesForm((prev) => ({ ...prev, date: iso }));
+    setNotesForm((prev) => ({ ...prev, date: formatDateForStorage(selectedDate) }));
   };
 
   const handleJournalTimeChange = (_event: any, selectedTime?: Date) => {
     setShowJournalTimePicker(false);
     if (!selectedTime) return;
-    const timeString = selectedTime.toTimeString().slice(0, 5);
-    setNotesForm((prev) => ({ ...prev, time: timeString }));
+    setNotesForm((prev) => ({ ...prev, time: formatTimeForStorage(selectedTime) }));
   };
 
   const handleEditActivity = (activity: TripActivity) => {
