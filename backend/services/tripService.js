@@ -7,7 +7,7 @@ function getTripPhotos(tripId) {
   return rows.map((r) => r.url);
 }
 
-function buildTripPayload(row, liked = false, counts = { likes: 0, comments: 0, photos: 0 }) {
+function buildTripPayload(row, liked = false, counts = { likes: 0, comments: 0, photos: 0, activities: 0 }, activities = []) {
   if (!row) return null;
   return {
     id: row.id,
@@ -18,9 +18,11 @@ function buildTripPayload(row, liked = false, counts = { likes: 0, comments: 0, 
     startDate: row.startDate,
     endDate: row.endDate,
     description: row.description,
+    notes: row.notes || "",
     image: row.image,
     photos: row.photos || [],
     photosCount: counts.photos ?? (row.photos ? row.photos.length : 0),
+    activitiesCount: counts.activities ?? activities.length,
     location: {
       lat: row.location_lat || 0,
       lng: row.location_lng || 0
@@ -35,7 +37,8 @@ function buildTripPayload(row, liked = false, counts = { likes: 0, comments: 0, 
     },
     likesCount: counts.likes,
     commentsCount: counts.comments,
-    liked
+    liked,
+    activities
   };
 }
 
@@ -43,7 +46,24 @@ function getTripCounts(tripId) {
   const likes = db.prepare("SELECT COUNT(*) AS count FROM likes WHERE trip_id = ?").get(tripId)?.count || 0;
   const comments = db.prepare("SELECT COUNT(*) AS count FROM comments WHERE trip_id = ?").get(tripId)?.count || 0;
   const photos = db.prepare("SELECT COUNT(*) AS count FROM trip_photos WHERE trip_id = ?").get(tripId)?.count || 0;
-  return { likes, comments, photos };
+  const activities = db.prepare("SELECT COUNT(*) AS count FROM trip_activities WHERE trip_id = ?").get(tripId)?.count || 0;
+  return { likes, comments, photos, activities };
+}
+
+function getTripActivities(tripId) {
+  const rows = db.prepare(`
+    SELECT id, title, date, description, created_at
+    FROM trip_activities
+    WHERE trip_id = ?
+    ORDER BY COALESCE(date, created_at) ASC
+  `).all(tripId);
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    date: row.date,
+    description: row.description || "",
+    created_at: row.created_at
+  }));
 }
 
 function normalizeLocation({ destination, city, country }) {
@@ -92,7 +112,7 @@ export class TripService {
     return { page, limit, total, trips: payload };
   }
 
-  createTrip({ ownerId, title, destination, city, country, startDate, endDate, description, image, photos, location }) {
+  createTrip({ ownerId, title, destination, city, country, startDate, endDate, description, notes, image, photos, location }) {
     const userRow = db.prepare("SELECT id FROM users WHERE id = ?").get(ownerId);
     if (!userRow) return { error: "User not found", status: 404 };
 
@@ -101,8 +121,8 @@ export class TripService {
     const normalizedLocation = normalizeLocation({ destination, city, country });
     const cover = image || photos?.[0] || "";
     db.prepare(`
-      INSERT INTO trips (id, owner_id, title, destination, city, country, startDate, endDate, description, image, location_lat, location_lng, created_at)
-      VALUES (@id, @owner_id, @title, @destination, @city, @country, @startDate, @endDate, @description, @image, @location_lat, @location_lng, @created_at)
+      INSERT INTO trips (id, owner_id, title, destination, city, country, startDate, endDate, description, notes, image, location_lat, location_lng, created_at)
+      VALUES (@id, @owner_id, @title, @destination, @city, @country, @startDate, @endDate, @description, @notes, @image, @location_lat, @location_lng, @created_at)
     `).run({
       id,
       owner_id: ownerId,
@@ -113,6 +133,7 @@ export class TripService {
       startDate: startDate || null,
       endDate: endDate || null,
       description: description || "",
+      notes: notes || "",
       image: cover,
       location_lat: location?.lat ?? null,
       location_lng: location?.lng ?? null,
@@ -138,7 +159,11 @@ export class TripService {
     `).get(id);
 
     const photosList = getTripPhotos(id);
-    return { trip: buildTripPayload({ ...tripRow, photos: photosList }, false, { ...counts, photos: photosList.length }), status: 201 };
+    const activities = getTripActivities(id);
+    return {
+      trip: buildTripPayload({ ...tripRow, photos: photosList }, false, { ...counts, photos: photosList.length }, activities),
+      status: 201
+    };
   }
 
   getTrip(id, currentUserId) {
@@ -153,6 +178,7 @@ export class TripService {
     const counts = getTripCounts(id);
     const liked = Boolean(db.prepare("SELECT 1 FROM likes WHERE trip_id = ? AND user_id = ?").get(id, currentUserId));
     const photos = getTripPhotos(id);
+    const activities = getTripActivities(id);
 
     const comments = db.prepare(`
       SELECT c.id, c.text, c.created_at, u.id as user_id, u.name as user_name, u.username as user_username, u.avatar as user_avatar
@@ -172,7 +198,7 @@ export class TripService {
       }
     }));
 
-    const tripPayload = buildTripPayload({ ...tripRow, photos }, liked, { ...counts, photos: photos.length });
+    const tripPayload = buildTripPayload({ ...tripRow, photos }, liked, { ...counts, photos: photos.length }, activities);
     return { ...tripPayload, comments };
   }
 
@@ -181,7 +207,7 @@ export class TripService {
     if (!trip) return { error: "Trip not found", status: 404 };
     if (trip.owner_id !== ownerId) return { error: "Only the owner can update this trip", status: 403 };
 
-    const { title, destination, city, country, startDate, endDate, description, image, location, photos } = data || {};
+    const { title, destination, city, country, startDate, endDate, description, notes, image, location, photos } = data || {};
     const normalizedLocation = normalizeLocation({ destination, city, country });
     const hasPhotosUpdate = Array.isArray(photos);
 
@@ -194,6 +220,7 @@ export class TripService {
         startDate = COALESCE(@startDate, startDate),
         endDate = COALESCE(@endDate, endDate),
         description = COALESCE(@description, description),
+        notes = COALESCE(@notes, notes),
         image = COALESCE(@image, image),
         location_lat = COALESCE(@location_lat, location_lat),
         location_lng = COALESCE(@location_lng, location_lng)
@@ -207,6 +234,7 @@ export class TripService {
       startDate,
       endDate,
       description,
+      notes,
       image,
       location_lat: location?.lat,
       location_lng: location?.lng
@@ -239,7 +267,11 @@ export class TripService {
 
     const liked = Boolean(db.prepare("SELECT 1 FROM likes WHERE trip_id = ? AND user_id = ?").get(id, ownerId));
     const photosList = getTripPhotos(id);
-    return { trip: buildTripPayload({ ...tripRow, photos: photosList }, liked, { ...counts, photos: photosList.length }), status: 200 };
+    const activities = getTripActivities(id);
+    return {
+      trip: buildTripPayload({ ...tripRow, photos: photosList }, liked, { ...counts, photos: photosList.length }, activities),
+      status: 200
+    };
   }
 
   deleteTrip(id, ownerId) {
@@ -249,6 +281,75 @@ export class TripService {
 
     db.prepare("DELETE FROM trips WHERE id = ?").run(id);
     return { message: "Trip deleted", status: 200 };
+  }
+
+  addActivity(tripId, ownerId, payload) {
+    const trip = db.prepare("SELECT owner_id FROM trips WHERE id = ?").get(tripId);
+    if (!trip) return { error: "Trip not found", status: 404 };
+    if (trip.owner_id !== ownerId) return { error: "Only the owner can add activities", status: 403 };
+
+    const { title, date, description } = payload || {};
+    if (!title || !title.trim()) return { error: "Title is required", status: 400 };
+
+    const id = uuidv4();
+    const createdAt = Date.now();
+    db.prepare(`
+      INSERT INTO trip_activities (id, trip_id, title, date, description, created_at)
+      VALUES (@id, @trip_id, @title, @date, @description, @created_at)
+    `).run({
+      id,
+      trip_id: tripId,
+      title: title.trim(),
+      date: date || null,
+      description: description || "",
+      created_at: createdAt
+    });
+
+    return {
+      activity: { id, title: title.trim(), date: date || null, description: description || "", created_at: createdAt },
+      status: 201
+    };
+  }
+
+  updateActivity(tripId, activityId, ownerId, payload) {
+    const trip = db.prepare("SELECT owner_id FROM trips WHERE id = ?").get(tripId);
+    if (!trip) return { error: "Trip not found", status: 404 };
+    if (trip.owner_id !== ownerId) return { error: "Only the owner can update activities", status: 403 };
+
+    const activity = db.prepare("SELECT * FROM trip_activities WHERE id = ? AND trip_id = ?").get(activityId, tripId);
+    if (!activity) return { error: "Activity not found", status: 404 };
+
+    const { title, date, description } = payload || {};
+    if (title !== undefined && !title.trim()) return { error: "Title is required", status: 400 };
+
+    db.prepare(`
+      UPDATE trip_activities
+      SET title = COALESCE(@title, title),
+          date = COALESCE(@date, date),
+          description = COALESCE(@description, description)
+      WHERE id = @id AND trip_id = @trip_id
+    `).run({
+      id: activityId,
+      trip_id: tripId,
+      title: title?.trim(),
+      date: date || null,
+      description
+    });
+
+    const updated = db.prepare("SELECT * FROM trip_activities WHERE id = ?").get(activityId);
+    return { activity: { ...updated }, status: 200 };
+  }
+
+  deleteActivity(tripId, activityId, ownerId) {
+    const trip = db.prepare("SELECT owner_id FROM trips WHERE id = ?").get(tripId);
+    if (!trip) return { error: "Trip not found", status: 404 };
+    if (trip.owner_id !== ownerId) return { error: "Only the owner can delete activities", status: 403 };
+
+    const activity = db.prepare("SELECT id FROM trip_activities WHERE id = ? AND trip_id = ?").get(activityId, tripId);
+    if (!activity) return { error: "Activity not found", status: 404 };
+
+    db.prepare("DELETE FROM trip_activities WHERE id = ? AND trip_id = ?").run(activityId, tripId);
+    return { message: "Activity deleted", status: 200 };
   }
 
   toggleLike(tripId, userId) {

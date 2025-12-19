@@ -61,3 +61,23 @@ export const deleteComment = (req, res) => {
   if (result.error) return res.status(result.status).json({ error: result.error });
   return res.status(result.status).json({ message: result.message });
 };
+
+export const addActivity = (req, res) => {
+  const result = tripService.addActivity(req.params.id, req.user.id, req.body);
+  if (result.error) return res.status(result.status).json({ error: result.error });
+  const { status, ...payload } = result;
+  return res.status(status).json(payload);
+};
+
+export const updateActivity = (req, res) => {
+  const result = tripService.updateActivity(req.params.id, req.params.activityId, req.user.id, req.body);
+  if (result.error) return res.status(result.status).json({ error: result.error });
+  const { status, ...payload } = result;
+  return res.status(status).json(payload);
+};
+
+export const deleteActivity = (req, res) => {
+  const result = tripService.deleteActivity(req.params.id, req.params.activityId, req.user.id);
+  if (result.error) return res.status(result.status).json({ error: result.error });
+  return res.status(result.status).json({ message: result.message });
+};

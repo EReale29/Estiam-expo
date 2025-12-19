@@ -1,4 +1,4 @@
-import { Trip, DashboardResponse } from '@/types/models';
+import { Trip, DashboardResponse, TripActivity } from '@/types/models';
 import { http } from './http';
 import { auth } from './auth';
 import { OFFLINE, TripPayload } from './offline';
@@ -13,6 +13,7 @@ export interface TripInput {
   startDate: string;
   endDate: string;
   description: string;
+  notes?: string;
   image?: string;
   photos?: string[];
   location?: { lat: number; lng: number };
@@ -120,5 +121,29 @@ export const API = {
 
   async getDashboard(): Promise<DashboardResponse> {
     return http.request<DashboardResponse>('/dashboard');
+  },
+
+  async addTripActivity(tripId: string, payload: { title: string; date?: string; description?: string }) {
+    return http.request<{ activity: TripActivity }>(`/trips/${tripId}/activities`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateTripActivity(
+    tripId: string,
+    activityId: string,
+    payload: { title?: string; date?: string; description?: string }
+  ) {
+    return http.request<{ activity: TripActivity }>(`/trips/${tripId}/activities/${activityId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteTripActivity(tripId: string, activityId: string) {
+    return http.request(`/trips/${tripId}/activities/${activityId}`, {
+      method: 'DELETE',
+    });
   },
 };

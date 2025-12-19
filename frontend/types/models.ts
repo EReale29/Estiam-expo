@@ -15,12 +15,23 @@ export interface Trip {
   endDate: string;
   image?: string;
   description?: string;
+  notes?: string;
   photos: string[];
   photosCount?: number;
+  activities?: TripActivity[];
+  activitiesCount?: number;
   location?: LocationPoint;
   liked?: boolean;
   likesCount?: number;
   commentsCount?: number;
+}
+
+export interface TripActivity {
+  id: string;
+  title: string;
+  date?: string;
+  description?: string;
+  created_at?: number;
 }
 
 export interface DashboardStats {
