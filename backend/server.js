@@ -24,7 +24,7 @@ app.get("/health", (req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/", userRoutes);
-app.use("/trip", tripRoutes);
+app.use("/", tripRoutes);
 app.use("/", uploadRoutes);
 
 app.use((req, res) => res.status(404).json({ error: "Not found" }));

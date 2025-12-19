@@ -5,13 +5,13 @@ import { authenticateToken } from "../middleware/authenticate.js";
 const router = Router();
 
 router.get("/dashboard", authenticateToken, getDashboard);
-router.get("/", authenticateToken, listTrips);
-router.post("/", authenticateToken, createTrip);
-router.get("/:id", authenticateToken, getTrip);
-router.put("/:id", authenticateToken, updateTrip);
-router.delete("/:id", authenticateToken, deleteTrip);
-router.post("/:id/like", authenticateToken, toggleLike);
-router.post("/:id/comments", authenticateToken, addComment);
-router.delete("/:id/comments/:commentId", authenticateToken, deleteComment);
+router.get("/trips", authenticateToken, listTrips);
+router.post("/trips", authenticateToken, createTrip);
+router.get("/trips/:id", authenticateToken, getTrip);
+router.put("/trips/:id", authenticateToken, updateTrip);
+router.delete("/trips/:id", authenticateToken, deleteTrip);
+router.post("/trips/:id/like", authenticateToken, toggleLike);
+router.post("/trips/:id/comments", authenticateToken, addComment);
+router.delete("/trips/:id/comments/:commentId", authenticateToken, deleteComment);
 
 export default router;
