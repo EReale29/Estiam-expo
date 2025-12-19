@@ -3,6 +3,7 @@ import { http } from './http';
 import { auth } from './auth';
 import { OFFLINE, TripPayload } from './offline';
 import { config } from '@/utils/env';
+import { events } from './events';
 
 export interface TripInput {
   title: string;
@@ -55,6 +56,7 @@ export const API = {
         method: 'POST',
         body: JSON.stringify(trip),
       });
+      events.emitTripsChanged();
       return created;
     }
 
@@ -65,11 +67,13 @@ export const API = {
       payload: trip,
     });
 
-    return {
+    const fallback = {
       ...trip,
       id: `local-${Date.now()}`,
       photos: trip.photos || [],
     };
+    events.emitTripsChanged();
+    return fallback;
   },
 
   async getTrips(): Promise<Trip[]> {
@@ -95,10 +99,12 @@ export const API = {
   },
 
   async updateTrip(id: string, payload: Partial<TripInput>): Promise<Trip> {
-    return http.request<Trip>(`/trips/${id}`, {
+    const updated = await http.request<Trip>(`/trips/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
+    events.emitTripsChanged();
+    return updated;
   },
 
   async getDashboard(): Promise<DashboardResponse> {

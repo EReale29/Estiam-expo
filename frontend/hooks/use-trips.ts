@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API } from '@/services/api';
 import { Trip } from '@/types/models';
+import { events } from '@/services/events';
 
 export type TripFilter = 'all' | 'upcoming' | 'past' | 'ongoing';
 export type TripView = 'list' | 'map';
@@ -49,6 +50,8 @@ export const useTrips = () => {
 
   useEffect(() => {
     loadTrips();
+    const unsubscribe = events.onTripsChanged(loadTrips);
+    return () => unsubscribe();
   }, [loadTrips]);
 
   const filteredTrips = useMemo(() => {
