@@ -7,7 +7,7 @@ function getTripPhotos(tripId) {
   return rows.map((r) => r.url);
 }
 
-function buildTripPayload(row, liked = false, counts = { likes: 0, comments: 0, photos: 0, activities: 0 }, activities = []) {
+function buildTripPayload(row, liked = false, counts = { likes: 0, comments: 0, photos: 0, activities: 0 }, activities = [], journalEntries = []) {
   if (!row) return null;
   return {
     id: row.id,
@@ -23,6 +23,7 @@ function buildTripPayload(row, liked = false, counts = { likes: 0, comments: 0, 
     photos: row.photos || [],
     photosCount: counts.photos ?? (row.photos ? row.photos.length : 0),
     activitiesCount: counts.activities ?? activities.length,
+    journalEntries,
     location: {
       lat: row.location_lat || 0,
       lng: row.location_lng || 0
@@ -47,21 +48,40 @@ function getTripCounts(tripId) {
   const comments = db.prepare("SELECT COUNT(*) AS count FROM comments WHERE trip_id = ?").get(tripId)?.count || 0;
   const photos = db.prepare("SELECT COUNT(*) AS count FROM trip_photos WHERE trip_id = ?").get(tripId)?.count || 0;
   const activities = db.prepare("SELECT COUNT(*) AS count FROM trip_activities WHERE trip_id = ?").get(tripId)?.count || 0;
-  return { likes, comments, photos, activities };
+  const journalEntries = db.prepare("SELECT COUNT(*) AS count FROM trip_journal_entries WHERE trip_id = ?").get(tripId)?.count || 0;
+  return { likes, comments, photos, activities, journalEntries };
 }
 
 function getTripActivities(tripId) {
   const rows = db.prepare(`
-    SELECT id, title, date, description, created_at
+    SELECT id, title, date, time, description, created_at
     FROM trip_activities
     WHERE trip_id = ?
-    ORDER BY COALESCE(date, created_at) ASC
+    ORDER BY COALESCE(date, created_at) ASC, COALESCE(time, '') ASC
   `).all(tripId);
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
     date: row.date,
+    time: row.time,
     description: row.description || "",
+    created_at: row.created_at
+  }));
+}
+
+function getTripJournalEntries(tripId) {
+  const rows = db.prepare(`
+    SELECT id, title, content, date, time, created_at
+    FROM trip_journal_entries
+    WHERE trip_id = ?
+    ORDER BY COALESCE(date, created_at) ASC, COALESCE(time, '') ASC
+  `).all(tripId);
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    content: row.content || "",
+    date: row.date,
+    time: row.time,
     created_at: row.created_at
   }));
 }
@@ -160,8 +180,15 @@ export class TripService {
 
     const photosList = getTripPhotos(id);
     const activities = getTripActivities(id);
+    const journalEntries = getTripJournalEntries(id);
     return {
-      trip: buildTripPayload({ ...tripRow, photos: photosList }, false, { ...counts, photos: photosList.length }, activities),
+      trip: buildTripPayload(
+        { ...tripRow, photos: photosList },
+        false,
+        { ...counts, photos: photosList.length },
+        activities,
+        journalEntries
+      ),
       status: 201
     };
   }
@@ -179,6 +206,7 @@ export class TripService {
     const liked = Boolean(db.prepare("SELECT 1 FROM likes WHERE trip_id = ? AND user_id = ?").get(id, currentUserId));
     const photos = getTripPhotos(id);
     const activities = getTripActivities(id);
+    const journalEntries = getTripJournalEntries(id);
 
     const comments = db.prepare(`
       SELECT c.id, c.text, c.created_at, u.id as user_id, u.name as user_name, u.username as user_username, u.avatar as user_avatar
@@ -198,7 +226,7 @@ export class TripService {
       }
     }));
 
-    const tripPayload = buildTripPayload({ ...tripRow, photos }, liked, { ...counts, photos: photos.length }, activities);
+    const tripPayload = buildTripPayload({ ...tripRow, photos }, liked, { ...counts, photos: photos.length }, activities, journalEntries);
     return { ...tripPayload, comments };
   }
 
@@ -268,8 +296,15 @@ export class TripService {
     const liked = Boolean(db.prepare("SELECT 1 FROM likes WHERE trip_id = ? AND user_id = ?").get(id, ownerId));
     const photosList = getTripPhotos(id);
     const activities = getTripActivities(id);
+    const journalEntries = getTripJournalEntries(id);
     return {
-      trip: buildTripPayload({ ...tripRow, photos: photosList }, liked, { ...counts, photos: photosList.length }, activities),
+      trip: buildTripPayload(
+        { ...tripRow, photos: photosList },
+        liked,
+        { ...counts, photos: photosList.length },
+        activities,
+        journalEntries
+      ),
       status: 200
     };
   }
@@ -288,25 +323,26 @@ export class TripService {
     if (!trip) return { error: "Trip not found", status: 404 };
     if (trip.owner_id !== ownerId) return { error: "Only the owner can add activities", status: 403 };
 
-    const { title, date, description } = payload || {};
+    const { title, date, time, description } = payload || {};
     if (!title || !title.trim()) return { error: "Title is required", status: 400 };
 
     const id = uuidv4();
     const createdAt = Date.now();
     db.prepare(`
-      INSERT INTO trip_activities (id, trip_id, title, date, description, created_at)
-      VALUES (@id, @trip_id, @title, @date, @description, @created_at)
+      INSERT INTO trip_activities (id, trip_id, title, date, time, description, created_at)
+      VALUES (@id, @trip_id, @title, @date, @time, @description, @created_at)
     `).run({
       id,
       trip_id: tripId,
       title: title.trim(),
       date: date || null,
+      time: time || null,
       description: description || "",
       created_at: createdAt
     });
 
     return {
-      activity: { id, title: title.trim(), date: date || null, description: description || "", created_at: createdAt },
+      activity: { id, title: title.trim(), date: date || null, time: time || null, description: description || "", created_at: createdAt },
       status: 201
     };
   }
@@ -319,13 +355,14 @@ export class TripService {
     const activity = db.prepare("SELECT * FROM trip_activities WHERE id = ? AND trip_id = ?").get(activityId, tripId);
     if (!activity) return { error: "Activity not found", status: 404 };
 
-    const { title, date, description } = payload || {};
+    const { title, date, time, description } = payload || {};
     if (title !== undefined && !title.trim()) return { error: "Title is required", status: 400 };
 
     db.prepare(`
       UPDATE trip_activities
       SET title = COALESCE(@title, title),
           date = COALESCE(@date, date),
+          time = COALESCE(@time, time),
           description = COALESCE(@description, description)
       WHERE id = @id AND trip_id = @trip_id
     `).run({
@@ -333,6 +370,7 @@ export class TripService {
       trip_id: tripId,
       title: title?.trim(),
       date: date || null,
+      time: time || null,
       description
     });
 
@@ -350,6 +388,78 @@ export class TripService {
 
     db.prepare("DELETE FROM trip_activities WHERE id = ? AND trip_id = ?").run(activityId, tripId);
     return { message: "Activity deleted", status: 200 };
+  }
+
+  addJournalEntry(tripId, ownerId, payload) {
+    const trip = db.prepare("SELECT owner_id FROM trips WHERE id = ?").get(tripId);
+    if (!trip) return { error: "Trip not found", status: 404 };
+    if (trip.owner_id !== ownerId) return { error: "Only the owner can add journal entries", status: 403 };
+
+    const { title, content, date, time } = payload || {};
+    if (!title || !title.trim()) return { error: "Title is required", status: 400 };
+
+    const id = uuidv4();
+    const createdAt = Date.now();
+    db.prepare(`
+      INSERT INTO trip_journal_entries (id, trip_id, title, content, date, time, created_at)
+      VALUES (@id, @trip_id, @title, @content, @date, @time, @created_at)
+    `).run({
+      id,
+      trip_id: tripId,
+      title: title.trim(),
+      content: content || "",
+      date: date || null,
+      time: time || null,
+      created_at: createdAt
+    });
+
+    return {
+      entry: { id, title: title.trim(), content: content || "", date: date || null, time: time || null, created_at: createdAt },
+      status: 201
+    };
+  }
+
+  updateJournalEntry(tripId, entryId, ownerId, payload) {
+    const trip = db.prepare("SELECT owner_id FROM trips WHERE id = ?").get(tripId);
+    if (!trip) return { error: "Trip not found", status: 404 };
+    if (trip.owner_id !== ownerId) return { error: "Only the owner can update journal entries", status: 403 };
+
+    const entry = db.prepare("SELECT * FROM trip_journal_entries WHERE id = ? AND trip_id = ?").get(entryId, tripId);
+    if (!entry) return { error: "Journal entry not found", status: 404 };
+
+    const { title, content, date, time } = payload || {};
+    if (title !== undefined && !title.trim()) return { error: "Title is required", status: 400 };
+
+    db.prepare(`
+      UPDATE trip_journal_entries
+      SET title = COALESCE(@title, title),
+          content = COALESCE(@content, content),
+          date = COALESCE(@date, date),
+          time = COALESCE(@time, time)
+      WHERE id = @id AND trip_id = @trip_id
+    `).run({
+      id: entryId,
+      trip_id: tripId,
+      title: title?.trim(),
+      content,
+      date: date || null,
+      time: time || null
+    });
+
+    const updated = db.prepare("SELECT * FROM trip_journal_entries WHERE id = ?").get(entryId);
+    return { entry: { ...updated }, status: 200 };
+  }
+
+  deleteJournalEntry(tripId, entryId, ownerId) {
+    const trip = db.prepare("SELECT owner_id FROM trips WHERE id = ?").get(tripId);
+    if (!trip) return { error: "Trip not found", status: 404 };
+    if (trip.owner_id !== ownerId) return { error: "Only the owner can delete journal entries", status: 403 };
+
+    const entry = db.prepare("SELECT id FROM trip_journal_entries WHERE id = ? AND trip_id = ?").get(entryId, tripId);
+    if (!entry) return { error: "Journal entry not found", status: 404 };
+
+    db.prepare("DELETE FROM trip_journal_entries WHERE id = ? AND trip_id = ?").run(entryId, tripId);
+    return { message: "Journal entry deleted", status: 200 };
   }
 
   toggleLike(tripId, userId) {

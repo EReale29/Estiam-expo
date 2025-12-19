@@ -20,6 +20,7 @@ export interface Trip {
   photosCount?: number;
   activities?: TripActivity[];
   activitiesCount?: number;
+  journalEntries?: TripJournalEntry[];
   location?: LocationPoint;
   liked?: boolean;
   likesCount?: number;
@@ -30,7 +31,17 @@ export interface TripActivity {
   id: string;
   title: string;
   date?: string;
+  time?: string;
   description?: string;
+  created_at?: number;
+}
+
+export interface TripJournalEntry {
+  id: string;
+  title: string;
+  content?: string;
+  date?: string;
+  time?: string;
   created_at?: number;
 }
 

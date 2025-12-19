@@ -1,4 +1,4 @@
-import { Trip, DashboardResponse, TripActivity } from '@/types/models';
+import { Trip, DashboardResponse, TripActivity, TripJournalEntry } from '@/types/models';
 import { http } from './http';
 import { auth } from './auth';
 import { OFFLINE, TripPayload } from './offline';
@@ -143,6 +143,30 @@ export const API = {
 
   async deleteTripActivity(tripId: string, activityId: string) {
     return http.request(`/trips/${tripId}/activities/${activityId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async addTripJournalEntry(tripId: string, payload: { title: string; content?: string; date?: string; time?: string }) {
+    return http.request<{ entry: TripJournalEntry }>(`/trips/${tripId}/journal`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateTripJournalEntry(
+    tripId: string,
+    entryId: string,
+    payload: { title?: string; content?: string; date?: string; time?: string }
+  ) {
+    return http.request<{ entry: TripJournalEntry }>(`/trips/${tripId}/journal/${entryId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteTripJournalEntry(tripId: string, entryId: string) {
+    return http.request(`/trips/${tripId}/journal/${entryId}`, {
       method: 'DELETE',
     });
   },

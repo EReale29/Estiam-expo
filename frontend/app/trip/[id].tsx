@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -7,7 +7,7 @@ import MapView, { Marker } from 'react-native-maps';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { API } from '@/services/api';
-import { Trip, TripActivity } from '@/types/models';
+import { Trip, TripActivity, TripJournalEntry } from '@/types/models';
 import { useI18n } from '@/contexts/i18n-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -20,8 +20,11 @@ export default function TripDetailScreen() {
   const [activities, setActivities] = useState<TripActivity[]>([]);
   const [activityForm, setActivityForm] = useState({ title: '', date: '', description: '' });
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
-  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [activityTime, setActivityTime] = useState('');
+  const [notesForm, setNotesForm] = useState({ title: '', content: '', date: '', time: '' });
+  const [journalEntries, setJournalEntries] = useState<TripJournalEntry[]>([]);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +33,15 @@ export default function TripDetailScreen() {
   const { width } = useWindowDimensions();
   const isWide = width > 880;
   const layoutWidth = { width: '100%', maxWidth: isWide ? 1080 : undefined, alignSelf: 'center' };
+  const sortedJournalEntries = useMemo(
+    () =>
+      [...journalEntries].sort((a, b) => {
+        const dateA = new Date(`${a.date || ''} ${a.time || ''}`).getTime() || 0;
+        const dateB = new Date(`${b.date || ''} ${b.time || ''}`).getTime() || 0;
+        return dateA - dateB;
+      }),
+    [journalEntries]
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -40,7 +52,8 @@ export default function TripDetailScreen() {
         const data = await API.getTrip(id);
         setTrip(data);
         setActivities(data.activities || []);
-        setNotes(data.notes || '');
+        setJournalEntries(data.journalEntries || []);
+        setNotesForm((prev) => ({ ...prev, content: data.notes || '' }));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load trip');
       } finally {
@@ -65,20 +78,32 @@ export default function TripDetailScreen() {
 
   const handleSaveNotes = async () => {
     if (!trip) return;
+    if (!notesForm.title.trim()) {
+      Alert.alert('Titre requis', 'Ajoutez un titre pour le journal');
+      return;
+    }
     try {
-      setIsSavingNotes(true);
-      const updated = await API.updateTrip(trip.id, { notes });
-      setTrip(updated);
-      setNotes(updated.notes || '');
+      setIsActionLoading(true);
+      if (editingEntryId) {
+        const res = await API.updateTripJournalEntry(trip.id, editingEntryId, notesForm);
+        setJournalEntries((prev) => prev.map((e) => (e.id === editingEntryId ? res.entry : e)));
+      } else {
+        const res = await API.addTripJournalEntry(trip.id, notesForm);
+        setJournalEntries((prev) => [...prev, res.entry]);
+      }
+      setNotesForm({ title: '', content: '', date: '', time: '' });
+      setEditingEntryId(null);
+      setIsNotesModalVisible(false);
     } catch (err) {
-      Alert.alert('Erreur', err instanceof Error ? err.message : 'Impossible de sauvegarder les notes');
+      Alert.alert('Erreur', err instanceof Error ? err.message : 'Impossible de sauvegarder le journal');
     } finally {
-      setIsSavingNotes(false);
+      setIsActionLoading(false);
     }
   };
 
   const resetActivityForm = () => {
     setActivityForm({ title: '', date: '', description: '' });
+    setActivityTime('');
     setEditingActivityId(null);
   };
 
@@ -91,10 +116,10 @@ export default function TripDetailScreen() {
     try {
       setIsActionLoading(true);
       if (editingActivityId) {
-        const res = await API.updateTripActivity(trip.id, editingActivityId, activityForm);
+        const res = await API.updateTripActivity(trip.id, editingActivityId, { ...activityForm, time: activityTime });
         setActivities((prev) => prev.map((a) => (a.id === editingActivityId ? res.activity : a)));
       } else {
-        const res = await API.addTripActivity(trip.id, activityForm);
+        const res = await API.addTripActivity(trip.id, { ...activityForm, time: activityTime });
         setActivities((prev) => [...prev, res.activity]);
       }
       setTrip((prev) => (prev ? { ...prev, activitiesCount: (prev.activitiesCount || 0) + (editingActivityId ? 0 : 1) } : prev));
@@ -113,6 +138,7 @@ export default function TripDetailScreen() {
       date: activity.date || '',
       description: activity.description || '',
     });
+    setActivityTime(activity.time || '');
   };
 
   const handleDeleteActivity = async (activityId: string) => {
@@ -231,27 +257,32 @@ export default function TripDetailScreen() {
             )}
 
             <View style={[styles.cardSection, { borderColor: palette.border }]}>
-              <Text style={[styles.sectionTitle, { color: palette.text }]}>Journal de bord</Text>
-              <TextInput
-                multiline
-                style={[
-                  styles.notesInput,
-                  { color: palette.text, borderColor: palette.border, backgroundColor: palette.surface },
-                ]}
-                placeholder="Ajoutez vos notes..."
-                placeholderTextColor={palette.muted}
-                value={notes}
-                onChangeText={setNotes}
-                editable={!isSavingNotes && !isActionLoading}
-              />
-              <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: palette.tint }]}
-                onPress={handleSaveNotes}
-                disabled={isSavingNotes}>
-                <Text style={[styles.saveButtonText, { color: palette.background }]}>
-                  {isSavingNotes ? t('general.loading') : 'Sauvegarder'}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: palette.text }]}>Journal de bord</Text>
+                <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.tint }]} onPress={() => setIsNotesModalVisible(true)}>
+                  <Text style={[styles.saveButtonText, { color: palette.background }]}>Ajouter</Text>
+                </TouchableOpacity>
+              </View>
+              {sortedJournalEntries.length === 0 ? (
+                <Text style={[styles.emptyText, { color: palette.muted }]}>Aucune note</Text>
+              ) : (
+                sortedJournalEntries.map((entry) => (
+                  <TouchableOpacity
+                    key={entry.id}
+                    style={[styles.activityItem, { borderColor: palette.border }]}
+                    onPress={() => handleEditJournal(entry)}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={[styles.activityTitle, { color: palette.text }]}>{entry.title}</Text>
+                      <Text style={[styles.activityMeta, { color: palette.muted }]}>
+                        {[entry.date, entry.time].filter(Boolean).join(' • ')}
+                      </Text>
+                    </View>
+                    <TouchableOpacity onPress={() => handleDeleteJournal(entry.id)} style={[styles.iconButton, { borderColor: palette.border }]}>
+                      <Ionicons name="trash" size={16} color={palette.danger} />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
 
             <View style={[styles.cardSection, { borderColor: palette.border }]}>
@@ -273,6 +304,14 @@ export default function TripDetailScreen() {
                   placeholderTextColor={palette.muted}
                   value={activityForm.date}
                   onChangeText={(text) => setActivityForm((prev) => ({ ...prev, date: text }))}
+                  editable={!isActionLoading}
+                />
+                <TextInput
+                  style={[styles.input, { borderColor: palette.border, color: palette.text }]}
+                  placeholder="Heure (HH:mm)"
+                  placeholderTextColor={palette.muted}
+                  value={activityTime}
+                  onChangeText={setActivityTime}
                   editable={!isActionLoading}
                 />
                 <TextInput
@@ -306,9 +345,9 @@ export default function TripDetailScreen() {
                   <View key={activity.id} style={[styles.activityItem, { borderColor: palette.border }]}>
                     <View style={{ flex: 1, gap: 4 }}>
                       <Text style={[styles.activityTitle, { color: palette.text }]}>{activity.title}</Text>
-                      {(activity.date || activity.description) && (
+                      {(activity.date || activity.time || activity.description) && (
                         <Text style={[styles.activityMeta, { color: palette.muted }]}>
-                          {[activity.date, activity.description].filter(Boolean).join(' • ')}
+                          {[activity.date, activity.time, activity.description].filter(Boolean).join(' • ')}
                         </Text>
                       )}
                     </View>
@@ -358,6 +397,87 @@ export default function TripDetailScreen() {
           </View>
         </ScrollView>
       )}
+
+      <Modal visible={isNotesModalVisible} transparent animationType="fade" onRequestClose={() => setIsNotesModalVisible(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={[styles.sectionTitle, { color: palette.text }]}>{editingEntryId ? 'Modifier une note' : 'Ajouter une note'}</Text>
+            {sortedJournalEntries.length > 0 && (
+              <View style={{ gap: 8 }}>
+                {sortedJournalEntries.map((entry) => (
+                  <View key={entry.id} style={[styles.activityItem, { borderColor: palette.border }]}>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={[styles.activityTitle, { color: palette.text }]}>{entry.title}</Text>
+                      <Text style={[styles.activityMeta, { color: palette.muted }]}>
+                        {[entry.date, entry.time].filter(Boolean).join(' • ')}
+                      </Text>
+                    </View>
+                    <View style={styles.activityActions}>
+                      <TouchableOpacity onPress={() => handleEditJournal(entry)} style={[styles.iconButton, { borderColor: palette.border }]}>
+                        <Ionicons name="pencil" size={16} color={palette.text} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeleteJournal(entry.id)} style={[styles.iconButton, { borderColor: palette.border }]}>
+                        <Ionicons name="trash" size={16} color={palette.danger} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+            <TextInput
+              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
+              placeholder="Titre"
+              placeholderTextColor={palette.muted}
+              value={notesForm.title}
+              onChangeText={(text) => setNotesForm((prev) => ({ ...prev, title: text }))}
+              editable={!isActionLoading}
+            />
+            <TextInput
+              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
+              placeholder="Date (YYYY-MM-DD)"
+              placeholderTextColor={palette.muted}
+              value={notesForm.date}
+              onChangeText={(text) => setNotesForm((prev) => ({ ...prev, date: text }))}
+              editable={!isActionLoading}
+            />
+            <TextInput
+              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
+              placeholder="Heure (HH:mm)"
+              placeholderTextColor={palette.muted}
+              value={notesForm.time}
+              onChangeText={(text) => setNotesForm((prev) => ({ ...prev, time: text }))}
+              editable={!isActionLoading}
+            />
+            <TextInput
+              multiline
+              style={[styles.notesInput, { borderColor: palette.border, color: palette.text, backgroundColor: palette.surface }]}
+              placeholder="Contenu"
+              placeholderTextColor={palette.muted}
+              value={notesForm.content}
+              onChangeText={(text) => setNotesForm((prev) => ({ ...prev, content: text }))}
+              editable={!isActionLoading}
+            />
+            <View style={styles.modalActions}>
+              {editingEntryId && (
+                <TouchableOpacity onPress={() => handleDeleteJournal(editingEntryId)} style={[styles.iconButton, { borderColor: palette.border }]}>
+                  <Ionicons name="trash" size={16} color={palette.danger} />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: palette.tint, flex: 1 }]}
+                onPress={handleSaveNotes}
+                disabled={isActionLoading}>
+                <Text style={[styles.saveButtonText, { color: palette.background }]}>
+                  {isActionLoading ? t('general.loading') : 'Enregistrer'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setIsNotesModalVisible(false)} style={styles.cancelButton}>
+                <Text style={[styles.cancelButtonText, { color: palette.text }]}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -496,6 +616,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 600,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   cancelButton: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
@@ -553,3 +693,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 });
+  const handleEditJournal = (entry: TripJournalEntry) => {
+    setEditingEntryId(entry.id);
+    setNotesForm({
+      title: entry.title,
+      content: entry.content || '',
+      date: entry.date || '',
+      time: entry.time || '',
+    });
+    setIsNotesModalVisible(true);
+  };
+
+  const handleDeleteJournal = async (entryId: string) => {
+    if (!trip) return;
+    try {
+      setIsActionLoading(true);
+      await API.deleteTripJournalEntry(trip.id, entryId);
+      setJournalEntries((prev) => prev.filter((e) => e.id !== entryId));
+      if (editingEntryId === entryId) setEditingEntryId(null);
+    } catch (err) {
+      Alert.alert('Erreur', err instanceof Error ? err.message : "Impossible de supprimer l'entrée");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };

@@ -11,7 +11,10 @@ import {
   listTrips,
   toggleLike,
   updateActivity,
-  updateTrip
+  updateTrip,
+  addJournalEntry,
+  updateJournalEntry,
+  deleteJournalEntry
 } from "../controllers/tripController.js";
 import { authenticateToken } from "../middleware/authenticate.js";
 
@@ -29,5 +32,8 @@ router.delete("/trips/:id/comments/:commentId", authenticateToken, deleteComment
 router.post("/trips/:id/activities", authenticateToken, addActivity);
 router.put("/trips/:id/activities/:activityId", authenticateToken, updateActivity);
 router.delete("/trips/:id/activities/:activityId", authenticateToken, deleteActivity);
+router.post("/trips/:id/journal", authenticateToken, addJournalEntry);
+router.put("/trips/:id/journal/:entryId", authenticateToken, updateJournalEntry);
+router.delete("/trips/:id/journal/:entryId", authenticateToken, deleteJournalEntry);
 
 export default router;
