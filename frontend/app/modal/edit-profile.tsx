@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useAuth } from '@/contexts/auth-context';
@@ -16,6 +16,7 @@ export default function EditProfileModal() {
   const { t } = useI18n();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const [username, setUsername] = useState(user?.username || '');
@@ -41,7 +42,9 @@ export default function EditProfileModal() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['bottom']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: palette.background, paddingTop: insets.top + 12 }]}
+      edges={['bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.border }]}>
           <Ionicons name="arrow-back" size={18} color={palette.text} />

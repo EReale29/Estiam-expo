@@ -10,7 +10,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -32,6 +32,7 @@ export default function AddTripModal() {
   const { t } = useI18n();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(palette), [palette]);
   const params = useLocalSearchParams<{ id?: string }>();
   const editingId = params.id;
@@ -329,7 +330,9 @@ export default function AddTripModal() {
   const formatDate = (date: Date | null) => (date ? date.toLocaleDateString() : '');
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: palette.background, paddingTop: insets.top + 12 }]}
+      edges={['bottom']}>
       <Text style={styles.title}>{t('addTrip.title')}</Text>
       <ScrollView>
         <View style={styles.section}>
