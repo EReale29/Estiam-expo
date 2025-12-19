@@ -19,10 +19,13 @@ export default function TripDetailScreen() {
   const { t } = useI18n();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [activities, setActivities] = useState<TripActivity[]>([]);
-  const [activityForm, setActivityForm] = useState({ title: '', date: '', description: '' });
+  const [activityForm, setActivityForm] = useState({ title: '', description: '' });
+  const [activityDate, setActivityDate] = useState<Date | null>(null);
+  const [activityTime, setActivityTime] = useState<Date | null>(null);
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
-  const [activityTime, setActivityTime] = useState('');
-  const [notesForm, setNotesForm] = useState({ title: '', content: '', date: '', time: '' });
+  const [notesForm, setNotesForm] = useState({ title: '', content: '' });
+  const [journalDate, setJournalDate] = useState<Date | null>(null);
+  const [journalTime, setJournalTime] = useState<Date | null>(null);
   const [journalEntries, setJournalEntries] = useState<TripJournalEntry[]>([]);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
@@ -105,14 +108,21 @@ export default function TripDetailScreen() {
     }
     try {
       setIsActionLoading(true);
+      const payload = {
+        ...notesForm,
+        date: journalDate ? formatDateForStorage(journalDate) : undefined,
+        time: journalTime ? formatTimeForStorage(journalTime) : undefined,
+      };
       if (editingEntryId) {
-        const res = await API.updateTripJournalEntry(trip.id, editingEntryId, notesForm);
+        const res = await API.updateTripJournalEntry(trip.id, editingEntryId, payload);
         setJournalEntries((prev) => prev.map((e) => (e.id === editingEntryId ? res.entry : e)));
       } else {
-        const res = await API.addTripJournalEntry(trip.id, notesForm);
+        const res = await API.addTripJournalEntry(trip.id, payload);
         setJournalEntries((prev) => [...prev, res.entry]);
       }
-      setNotesForm({ title: '', content: '', date: '', time: '' });
+      setNotesForm({ title: '', content: '' });
+      setJournalDate(null);
+      setJournalTime(null);
       setEditingEntryId(null);
       setIsNotesModalVisible(false);
     } catch (err) {
@@ -123,12 +133,13 @@ export default function TripDetailScreen() {
   };
 
   const resetActivityForm = () => {
-    setActivityForm({ title: '', date: '', description: '' });
-    setActivityTime('');
+    setActivityForm({ title: '', description: '' });
+    setActivityDate(null);
+    setActivityTime(null);
     setEditingActivityId(null);
   };
 
-  const parseDateValue = (value?: string) => {
+  const parseDateValue = (value?: string | null) => {
     if (value) {
       const parsed = new Date(`${value}T00:00`);
       if (!Number.isNaN(parsed.getTime())) return parsed;
@@ -136,7 +147,7 @@ export default function TripDetailScreen() {
     return new Date();
   };
 
-  const parseTimeValue = (value?: string) => {
+  const parseTimeValue = (value?: string | null) => {
     const base = new Date();
     if (value) {
       const [hours, minutes] = value.split(':').map((v) => parseInt(v, 10));
@@ -171,10 +182,18 @@ export default function TripDetailScreen() {
     try {
       setIsActionLoading(true);
       if (editingActivityId) {
-        const res = await API.updateTripActivity(trip.id, editingActivityId, { ...activityForm, time: activityTime });
+        const res = await API.updateTripActivity(trip.id, editingActivityId, {
+          ...activityForm,
+          date: activityDate ? formatDateForStorage(activityDate) : undefined,
+          time: activityTime ? formatTimeForStorage(activityTime) : undefined,
+        });
         setActivities((prev) => prev.map((a) => (a.id === editingActivityId ? res.activity : a)));
       } else {
-        const res = await API.addTripActivity(trip.id, { ...activityForm, time: activityTime });
+        const res = await API.addTripActivity(trip.id, {
+          ...activityForm,
+          date: activityDate ? formatDateForStorage(activityDate) : undefined,
+          time: activityTime ? formatTimeForStorage(activityTime) : undefined,
+        });
         setActivities((prev) => [...prev, res.activity]);
       }
       setTrip((prev) => (prev ? { ...prev, activitiesCount: (prev.activitiesCount || 0) + (editingActivityId ? 0 : 1) } : prev));
@@ -189,35 +208,35 @@ export default function TripDetailScreen() {
   const handleActivityDateChange = (_event: any, selectedDate?: Date) => {
     setShowActivityDatePicker(false);
     if (!selectedDate) return;
-    setActivityForm((prev) => ({ ...prev, date: formatDateForStorage(selectedDate) }));
+    setActivityDate(selectedDate);
   };
 
   const handleActivityTimeChange = (_event: any, selectedTime?: Date) => {
     setShowActivityTimePicker(false);
     if (!selectedTime) return;
-    setActivityTime(formatTimeForStorage(selectedTime));
+    setActivityTime(selectedTime);
   };
 
   const handleJournalDateChange = (_event: any, selectedDate?: Date) => {
     setShowJournalDatePicker(false);
     if (!selectedDate) return;
-    setNotesForm((prev) => ({ ...prev, date: formatDateForStorage(selectedDate) }));
+    setJournalDate(selectedDate);
   };
 
   const handleJournalTimeChange = (_event: any, selectedTime?: Date) => {
     setShowJournalTimePicker(false);
     if (!selectedTime) return;
-    setNotesForm((prev) => ({ ...prev, time: formatTimeForStorage(selectedTime) }));
+    setJournalTime(selectedTime);
   };
 
   const handleEditActivity = (activity: TripActivity) => {
     setEditingActivityId(activity.id);
     setActivityForm({
       title: activity.title,
-      date: activity.date || '',
       description: activity.description || '',
     });
-    setActivityTime(activity.time || '');
+    setActivityDate(activity.date ? parseDateValue(activity.date) : null);
+    setActivityTime(activity.time ? parseTimeValue(activity.time) : null);
   };
 
   const handleDeleteActivity = async (activityId: string) => {
@@ -240,9 +259,9 @@ export default function TripDetailScreen() {
     setNotesForm({
       title: entry.title,
       content: entry.content || '',
-      date: entry.date || '',
-      time: entry.time || '',
     });
+    setJournalDate(entry.date ? parseDateValue(entry.date) : null);
+    setJournalTime(entry.time ? parseTimeValue(entry.time) : null);
     setIsNotesModalVisible(true);
   };
 
@@ -504,7 +523,7 @@ export default function TripDetailScreen() {
 
       {showActivityDatePicker && (
         <DateTimePicker
-          value={parseDateValue(activityForm.date)}
+          value={activityDate || new Date()}
           mode="date"
           display="default"
           onChange={handleActivityDateChange}
@@ -512,7 +531,7 @@ export default function TripDetailScreen() {
       )}
       {showActivityTimePicker && (
         <DateTimePicker
-          value={parseTimeValue(activityTime)}
+          value={activityTime || new Date()}
           mode="time"
           is24Hour
           display="default"
@@ -521,7 +540,7 @@ export default function TripDetailScreen() {
       )}
       {showJournalDatePicker && (
         <DateTimePicker
-          value={parseDateValue(notesForm.date)}
+          value={journalDate || new Date()}
           mode="date"
           display="default"
           onChange={handleJournalDateChange}
@@ -529,7 +548,7 @@ export default function TripDetailScreen() {
       )}
       {showJournalTimePicker && (
         <DateTimePicker
-          value={parseTimeValue(notesForm.time)}
+          value={journalTime || new Date()}
           mode="time"
           is24Hour
           display="default"
@@ -576,7 +595,7 @@ export default function TripDetailScreen() {
               onPress={() => setShowJournalDatePicker(true)}
               disabled={isActionLoading}>
               <Text style={[styles.pickerButtonText, { color: palette.text }]}>
-                {notesForm.date ? formatDisplayDateTime(notesForm.date, '') : 'Date'}
+                {journalDate ? formatDisplayDateTime(formatDateForStorage(journalDate), '') : 'Date'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -584,7 +603,7 @@ export default function TripDetailScreen() {
               onPress={() => setShowJournalTimePicker(true)}
               disabled={isActionLoading}>
               <Text style={[styles.pickerButtonText, { color: palette.text }]}>
-                {notesForm.time ? formatDisplayDateTime('', notesForm.time) : 'Heure'}
+                {journalTime ? formatDisplayDateTime('', formatTimeForStorage(journalTime)) : 'Heure'}
               </Text>
             </TouchableOpacity>
             <TextInput
