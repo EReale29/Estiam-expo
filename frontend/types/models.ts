@@ -9,11 +9,14 @@ export interface Trip {
   id: string;
   title: string;
   destination: string;
+  city?: string;
+  country?: string;
   startDate: string;
   endDate: string;
   image?: string;
   description?: string;
   photos: string[];
+  photosCount?: number;
   location?: LocationPoint;
 }
 

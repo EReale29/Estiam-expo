@@ -22,6 +22,8 @@ export interface TripPayload {
   id?: string;
   title: string;
   destination: string;
+  city?: string;
+  country?: string;
   startDate: string;
   endDate: string;
   description: string;

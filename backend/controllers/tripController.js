@@ -3,7 +3,7 @@ import { TripService } from "../services/tripService.js";
 const tripService = new TripService();
 
 export const getDashboard = (req, res) => {
-  const data = tripService.dashboard();
+  const data = tripService.dashboard(req.user.id);
   return res.json(data);
 };
 

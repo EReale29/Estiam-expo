@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import * as Device from 'expo-device';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useLocalSearchParams } from 'expo-router';
 
 import { API } from '@/services/api';
 import { isEndDateAfterStart, isValidDestination, isValidName } from '@/utils/validation';
@@ -24,6 +25,7 @@ import { useI18n } from '@/contexts/i18n-context';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
+import { Image } from 'expo-image';
 
 export default function AddTripModal() {
   const router = useRouter();
@@ -31,15 +33,20 @@ export default function AddTripModal() {
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
   const styles = useMemo(() => createStyles(palette), [palette]);
+  const params = useLocalSearchParams<{ id?: string }>();
+  const editingId = params.id;
 
   const [tripTitle, setTripTitle] = useState('');
-  const [destination, setDestination] = useState('');
+  const [destinationSearch, setDestinationSearch] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [description, setDescription] = useState('');
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<Array<string>>([]);
+  const [existingPhotos, setExistingPhotos] = useState<Array<string>>([]);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | undefined>(undefined);
@@ -143,7 +150,9 @@ export default function AddTripModal() {
         const city = addr.city || addr.name || '';
         const country = addr.country || '';
         const formattedAddress = `${city}${city && country ? ', ' : ''}${country}`.trim();
-        setDestination(formattedAddress);
+        setDestinationSearch(formattedAddress);
+        setCity(city);
+        setCountry(country);
       }
       setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
     } catch (error) {
@@ -170,7 +179,7 @@ export default function AddTripModal() {
   };
 
   const geocodeDestination = async (): Promise<{ lat: number; lng: number } | undefined> => {
-    const query = destination.trim();
+    const query = destinationSearch.trim() || `${city}, ${country}`;
     if (!query) return undefined;
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
@@ -194,7 +203,7 @@ export default function AddTripModal() {
   };
 
   useEffect(() => {
-    const query = destination.trim();
+    const query = destinationSearch.trim();
     if (query.length < 3) {
       setSuggestions([]);
       return;
@@ -229,14 +238,40 @@ export default function AddTripModal() {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [destination]);
+  }, [destinationSearch]);
+
+  useEffect(() => {
+    if (!editingId) return;
+    const loadTrip = async () => {
+      try {
+        const trip = await API.getTrip(editingId);
+        setTripTitle(trip.title);
+        setDestinationSearch(trip.destination || '');
+        setCity(trip.city || '');
+        setCountry(trip.country || '');
+        setStartDate(trip.startDate ? new Date(trip.startDate) : null);
+        setEndDate(trip.endDate ? new Date(trip.endDate) : null);
+        setDescription(trip.description || '');
+        setExistingPhotos(trip.photos || []);
+        setLocation(trip.location);
+      } catch (error) {
+        console.error('Unable to load trip', error);
+      }
+    };
+    loadTrip();
+  }, [editingId]);
 
   const handleSaveTrip = async () => {
     if (!isValidName(tripTitle)) {
       Alert.alert(t('addTrip.required'));
       return;
     }
-    if (!isValidDestination(destination)) {
+    if (!city.trim() || !country.trim()) {
+      Alert.alert(t('addTrip.destinationFormat'));
+      return;
+    }
+    const formattedDestination = destinationSearch || `${city}, ${country}`.trim();
+    if (!formattedDestination || !isValidDestination(formattedDestination)) {
       Alert.alert(t('addTrip.destinationFormat'));
       return;
     }
@@ -256,16 +291,25 @@ export default function AddTripModal() {
         return;
       }
 
-      const newTrip = await API.createTrip({
+      const finalPhotos = [...existingPhotos, ...photos];
+      const payload = {
         title: tripTitle,
-        destination,
+        destination: formattedDestination,
+        city,
+        country,
         startDate: startDate ? startDate.toISOString().split('T')[0] : '',
         endDate: endDate ? endDate.toISOString().split('T')[0] : '',
         description,
-        image: cover,
-        photos,
+        image: cover || finalPhotos[0],
+        photos: finalPhotos,
         location: resolvedLocation,
-      });
+      };
+
+      if (editingId) {
+        await API.updateTrip(editingId, payload);
+      } else {
+        await API.createTrip(payload);
+      }
 
       Alert.alert('Succès', t('addTrip.success'), [
         {
@@ -273,7 +317,7 @@ export default function AddTripModal() {
           onPress: () => router.back(),
         },
       ]);
-      return newTrip;
+      return payload;
     } catch (error) {
       const message = error instanceof Error ? error.message : t('addTrip.failure');
       Alert.alert('Erreur', message);
@@ -322,8 +366,8 @@ export default function AddTripModal() {
             <TextInput
               style={styles.inputFlex}
               placeholder={t('addTrip.destinationHint')}
-              value={destination}
-              onChangeText={setDestination}
+              value={destinationSearch}
+              onChangeText={setDestinationSearch}
               placeholderTextColor={palette.muted}
             />
             <TouchableOpacity onPress={getLocation}>
@@ -331,6 +375,28 @@ export default function AddTripModal() {
                 <Ionicons name="location-outline" size={16} color={palette.tint} /> {t('addTrip.useLocation')}
               </Text>
             </TouchableOpacity>
+          </View>
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>{t('addTrip.city')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={t('addTrip.city')}
+                value={city}
+                onChangeText={setCity}
+                placeholderTextColor={palette.muted}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>{t('addTrip.country')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={t('addTrip.country')}
+                value={country}
+                onChangeText={setCountry}
+                placeholderTextColor={palette.muted}
+              />
+            </View>
           </View>
           {isSearching && <Text style={[styles.suggestionStatus, { color: palette.muted }]}>{t('general.loading')}</Text>}
           {!isSearching && suggestions.length > 0 && (
@@ -340,7 +406,10 @@ export default function AddTripModal() {
                   key={`${item.label}-${item.lat}`}
                   style={styles.suggestionItem}
                   onPress={() => {
-                    setDestination(item.label);
+                    setDestinationSearch(item.label);
+                    const [maybeCity, maybeCountry] = item.label.split(',').map((v) => v.trim());
+                    setCity(maybeCity || '');
+                    setCountry(maybeCountry || '');
                     setLocation({ lat: item.lat, lng: item.lng });
                     setSuggestions([]);
                   }}
@@ -430,9 +499,30 @@ export default function AddTripModal() {
           </View>
         )}
 
+        {(existingPhotos.length > 0 || selectedImages.length > 0) && (
+          <View style={styles.section}>
+            <Text style={styles.label}>{t('home.statsPhotos')}</Text>
+            <View style={styles.selectedPhotos}>
+              {existingPhotos.map((photo) => (
+                <View key={photo} style={[styles.photoPreview, { borderColor: palette.border }]}>
+                  <Image source={{ uri: photo }} style={styles.previewImage} />
+                  <TouchableOpacity style={styles.removeBadge} onPress={() => setExistingPhotos((prev) => prev.filter((p) => p !== photo))}>
+                    <Ionicons name="close" size={12} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {selectedImages.map((photo) => (
+                <View key={photo} style={[styles.photoPreview, { borderColor: palette.border }]}>
+                  <Image source={{ uri: photo }} style={styles.previewImage} />
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveTrip} disabled={isUploading}>
           <LinearGradient colors={palette.actionGradient} style={styles.gradientButton} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-            <Text style={styles.saveButtonText}>{isUploading ? t('addTrip.uploading') : t('addTrip.create')}</Text>
+            <Text style={styles.saveButtonText}>{isUploading ? t('addTrip.uploading') : editingId ? t('profile.save') : t('addTrip.create')}</Text>
           </LinearGradient>
         </TouchableOpacity>
         <View style={{ height: 40 }} />
@@ -534,6 +624,11 @@ const createStyles = (palette: typeof Colors.light) =>
       fontSize: 16,
       color: palette.text,
     },
+    row: {
+      flexDirection: 'row',
+      gap: 12,
+      alignItems: 'flex-start',
+    },
     dateRow: {
       flexDirection: 'row',
       gap: 12,
@@ -615,5 +710,34 @@ const createStyles = (palette: typeof Colors.light) =>
     suggestionStatus: {
       marginTop: 6,
       fontSize: 12,
+    },
+    selectedPhotos: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 8,
+    },
+    photoPreview: {
+      width: 90,
+      height: 90,
+      borderRadius: 12,
+      overflow: 'hidden',
+      borderWidth: 1,
+      position: 'relative',
+    },
+    previewImage: {
+      width: '100%',
+      height: '100%',
+    },
+    removeBadge: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+      backgroundColor: palette.danger,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
   });

@@ -49,10 +49,21 @@ export default function TripDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
-      <TouchableOpacity style={[styles.backButton, { borderColor: palette.border }, layoutWidth]} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={20} color={palette.text} />
-        <Text style={[styles.backText, { color: palette.text }]}>{t('trips.openDetails')}</Text>
-      </TouchableOpacity>
+      <View style={[styles.topBar, layoutWidth]}>
+        <TouchableOpacity style={[styles.backButton, { borderColor: palette.border }]} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={20} color={palette.text} />
+          <Text style={[styles.backText, { color: palette.text }]}>{t('trips.openDetails')}</Text>
+        </TouchableOpacity>
+
+        {trip && (
+          <TouchableOpacity
+            style={[styles.editButton, { borderColor: palette.border }]}
+            onPress={() => router.push({ pathname: '/modal/add-trip', params: { id } })}>
+            <Ionicons name="pencil" size={18} color={palette.text} />
+            <Text style={[styles.backText, { color: palette.text }]}>{t('profile.edit')}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {isLoading && <ActivityIndicator color={palette.tint} style={{ marginTop: 12 }} />}
       {error && <Text style={[styles.error, { color: palette.danger }, layoutWidth]}>{error}</Text>}
@@ -75,6 +86,12 @@ export default function TripDetailScreen() {
               <Ionicons name="calendar-outline" size={18} color={palette.icon} />
               <Text style={[styles.subtitle, { color: palette.muted }]}>
                 {trip.startDate} - {trip.endDate}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Ionicons name="camera-outline" size={18} color={palette.icon} />
+              <Text style={[styles.subtitle, { color: palette.muted }]}>
+                {trip.photos?.length || 0} photos
               </Text>
             </View>
             {!!trip.description && <Text style={[styles.description, { color: palette.text }]}>{trip.description}</Text>}
@@ -120,10 +137,26 @@ const styles = StyleSheet.create({
     gap: 6,
     padding: 16,
     borderBottomWidth: 1,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     alignSelf: 'center',
+    width: '100%',
+    paddingHorizontal: 12,
+    paddingTop: 8,
   },
   backText: {
     fontWeight: '600',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 12,
   },
   cover: {
     height: 240,

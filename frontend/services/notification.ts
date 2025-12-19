@@ -28,7 +28,7 @@ const KEYS = {
 } as const;
 
 const DEFAULT_PREFS: NotificationPreferences = {
-    enabled: true,
+    enabled: false,
     tripReminders: true,
     newMessages: true,
     promotions: true,
@@ -52,6 +52,11 @@ Notifications.setNotificationHandler({
 export const notifications = {
 
     async initialize(): Promise<PushToken | null> {
+        const prefs = await this.getPreferences();
+        if (!prefs.enabled) {
+            console.log('Notifications disabled - skipping token request');
+            return null;
+        }
         const isSimulator = !Device.isDevice;
 
         if (isSimulator) {
@@ -89,8 +94,12 @@ export const notifications = {
 
          try {
 
-            const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-            const tokenData = await Notifications.getExpoPushTokenAsync({projectId});
+            const projectId =
+              Constants.expoConfig?.extra?.eas?.projectId ||
+              (Constants as any)?.expoConfig?.projectId ||
+              (Constants as any)?.easConfig?.projectId;
+
+            const tokenData = await Notifications.getExpoPushTokenAsync(projectId ? {projectId} : undefined as any);
 
             const pushToken: PushToken = {
                 token: tokenData.data,
@@ -100,8 +109,9 @@ export const notifications = {
             }
 
             await AsyncStorage.setItem(KEYS.PUSH_TOKEN, JSON.stringify(pushToken));
+            await this.savePreferences({ ...prefs, enabled: true });
             return pushToken;
-            
+
          } catch (error) {
             console.error('Get push token error:', error);
             return null;
@@ -180,6 +190,9 @@ export const notifications = {
     },
      async savePreferences(prefs: NotificationPreferences): Promise<void> {
        await AsyncStorage.setItem(KEYS.PREFERENCES, JSON.stringify(prefs));
+       if (!prefs.enabled) {
+        await AsyncStorage.removeItem(KEYS.PUSH_TOKEN);
+       }
     },
     
     setupListeners(

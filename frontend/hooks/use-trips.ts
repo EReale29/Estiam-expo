@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { API } from '@/services/api';
 import { Trip } from '@/types/models';
 
-export type TripFilter = 'all' | 'upcoming' | 'past';
+export type TripFilter = 'all' | 'upcoming' | 'past' | 'ongoing';
 export type TripView = 'list' | 'map';
 
 const isUpcoming = (trip: Trip) => {
@@ -15,6 +15,15 @@ const isPast = (trip: Trip) => {
   if (!trip.endDate) return false;
   const end = new Date(trip.endDate).getTime();
   return !Number.isNaN(end) && end < Date.now();
+};
+
+const isOngoing = (trip: Trip) => {
+  if (!trip.startDate || !trip.endDate) return false;
+  const now = Date.now();
+  const start = new Date(trip.startDate).getTime();
+  const end = new Date(trip.endDate).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) return false;
+  return start <= now && now <= end;
 };
 
 export const useTrips = () => {
@@ -54,6 +63,7 @@ export const useTrips = () => {
 
       if (filter === 'upcoming') return isUpcoming(trip);
       if (filter === 'past') return isPast(trip);
+      if (filter === 'ongoing') return isOngoing(trip);
       return true;
     });
   }, [trips, query, filter]);

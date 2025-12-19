@@ -7,6 +7,8 @@ import { config } from '@/utils/env';
 export interface TripInput {
   title: string;
   destination: string;
+  city?: string;
+  country?: string;
   startDate: string;
   endDate: string;
   description: string;
@@ -90,6 +92,13 @@ export const API = {
 
   async getTrip(id: string): Promise<Trip> {
     return http.request<Trip>(`/trips/${id}`);
+  },
+
+  async updateTrip(id: string, payload: Partial<TripInput>): Promise<Trip> {
+    return http.request<Trip>(`/trips/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
   },
 
   async getDashboard(): Promise<DashboardResponse> {
