@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -43,6 +43,8 @@ export default function AddTripModal() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [suggestions, setSuggestions] = useState<Array<{ label: string; lat: number; lng: number }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const isPhysicalDevice = Device.isDevice;
 
@@ -174,8 +176,8 @@ export default function AddTripModal() {
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'TravelMateApp/1.0 (expo)'
-        }
+          'User-Agent': 'TravelMateApp/1.0 (expo)',
+        },
       });
       if (!response.ok) {
         return undefined;
@@ -190,6 +192,37 @@ export default function AddTripModal() {
       return undefined;
     }
   };
+
+  useEffect(() => {
+    const query = destination.trim();
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`;
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'TravelMateApp/1.0 (expo)' },
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as Array<{ display_name: string; lat: string; lon: string }>;
+        setSuggestions(
+          data.map((item) => ({
+            label: item.display_name,
+            lat: parseFloat(item.lat),
+            lng: parseFloat(item.lon),
+          }))
+        );
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [destination]);
 
   const handleSaveTrip = async () => {
     if (!isValidName(tripTitle)) {
@@ -210,7 +243,7 @@ export default function AddTripModal() {
       setUploadProgress(0);
 
       const { cover, photos } = await uploadImages();
-      const resolvedLocation = await geocodeDestination();
+      const resolvedLocation = location || (await geocodeDestination());
       if (!resolvedLocation) {
         Alert.alert('Erreur', t('addTrip.destinationFormat'));
         return;
@@ -292,6 +325,27 @@ export default function AddTripModal() {
               </Text>
             </TouchableOpacity>
           </View>
+          {isSearching && <Text style={[styles.suggestionStatus, { color: palette.muted }]}>{t('general.loading')}</Text>}
+          {!isSearching && suggestions.length > 0 && (
+            <View style={[styles.suggestionsBox, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+              {suggestions.map((item) => (
+                <TouchableOpacity
+                  key={`${item.label}-${item.lat}`}
+                  style={styles.suggestionItem}
+                  onPress={() => {
+                    setDestination(item.label);
+                    setLocation({ lat: item.lat, lng: item.lng });
+                    setSuggestions([]);
+                  }}
+                >
+                  <Ionicons name="location" size={16} color={palette.tint} />
+                  <Text style={[styles.suggestionText, { color: palette.text }]} numberOfLines={1}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -533,5 +587,26 @@ const createStyles = (palette: typeof Colors.light) =>
       color: palette.background,
       fontSize: 16,
       fontWeight: '600',
+    },
+    suggestionsBox: {
+      marginTop: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+      overflow: 'hidden',
+    },
+    suggestionItem: {
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    suggestionText: {
+      flex: 1,
+      fontSize: 14,
+    },
+    suggestionStatus: {
+      marginTop: 6,
+      fontSize: 12,
     },
   });
