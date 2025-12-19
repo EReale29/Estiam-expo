@@ -8,12 +8,16 @@ import { useRouter } from 'expo-router';
 
 import { useNotifications } from '@/hooks/use-notifications';
 import { useI18n } from '@/contexts/i18n-context';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function NotificationScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const [testResults, setTestResults] = useState<string[]>([]);
   const isSimulator = !Device.isDevice;
+  const colorScheme = useColorScheme();
+  const palette = Colors[colorScheme ?? 'light'];
 
   const {
     pushToken,
@@ -75,110 +79,133 @@ export default function NotificationScreen() {
   const handleClearResults = () => setTestResults([]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <LinearGradient colors={['#a855f7', '#ec4899']} style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
+      <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }]}>
         <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+          <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.glassStroke }]}>
+            <Ionicons name="arrow-back" size={24} color={palette.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
+          <Text style={[styles.headerTitle, { color: palette.text }]}>{t('notifications.title')}</Text>
           <View style={styles.placeholder} />
         </View>
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.statusCard}>
+        <View style={[styles.statusCard, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
           <View style={styles.statusRow}>
             <Ionicons
               name={isSimulator ? 'phone-portrait-outline' : 'phone-portrait'}
               size={20}
-              color={isSimulator ? '#f59e0b' : '#10b981'}
+              color={isSimulator ? palette.warning : palette.success}
             />
-            <Text style={styles.statusText}>{isSimulator ? 'Simulateur' : 'Appareil physique'}</Text>
+            <Text style={[styles.statusText, { color: palette.text }]}>{isSimulator ? 'Simulateur' : 'Appareil physique'}</Text>
           </View>
           <View style={styles.statusRow}>
             <Ionicons
               name={hasPermission ? 'checkmark-circle' : 'close-circle'}
               size={20}
-              color={hasPermission ? '#10b981' : '#ef4444'}
+              color={hasPermission ? palette.success : palette.danger}
             />
-            <Text style={styles.statusText}>Permissions: {hasPermission ? 'Accordées' : 'Non accordées'}</Text>
+            <Text style={[styles.statusText, { color: palette.text }]}>Permissions: {hasPermission ? 'Accordées' : 'Non accordées'}</Text>
           </View>
           {pushToken && (
             <View style={styles.tokenContainer}>
-              <Text style={styles.tokenLabel}>Token:</Text>
-              <Text style={styles.tokenText} numberOfLines={1}>
+              <Text style={[styles.tokenLabel, { color: palette.muted }]}>Token:</Text>
+              <Text style={[styles.tokenText, { color: palette.text }]} numberOfLines={1}>
                 {pushToken.token}
               </Text>
             </View>
           )}
           <View style={styles.badgeContainer}>
-            <Text style={styles.badgeLabel}>Badge count: {badgeCount}</Text>
+            <Text style={[styles.badgeLabel, { color: palette.text }]}>Badge count: {badgeCount}</Text>
           </View>
           {scheduled.length > 0 && (
             <View style={styles.scheduledContainer}>
-              <Text style={styles.scheduledLabel}>Notifications programmées: {scheduled.length}</Text>
+              <Text style={[styles.scheduledLabel, { color: palette.muted }]}>Notifications programmées: {scheduled.length}</Text>
             </View>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('notifications.title')}</Text>
+          <Text style={[styles.sectionTitle, { color: palette.text }]}>{t('notifications.title')}</Text>
 
-          <TouchableOpacity onPress={handleInitialize} disabled={isLoading} style={[styles.button, styles.buttonPrimary]}>
-            <Ionicons name="notifications-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>{t('notifications.initialize')}</Text>
+          <TouchableOpacity
+            onPress={handleInitialize}
+            disabled={isLoading}
+            style={[styles.button, { backgroundColor: palette.tint, shadowColor: palette.shadow }]}>
+            <Ionicons name="notifications-outline" size={20} color={palette.background} />
+            <Text style={[styles.buttonText, { color: palette.background }]}>{t('notifications.initialize')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleSendImmediate} style={[styles.button, styles.buttonSuccess]}>
-            <Ionicons name="send-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>{t('notifications.immediate')}</Text>
+          <TouchableOpacity
+            onPress={handleSendImmediate}
+            style={[styles.button, { backgroundColor: palette.success, shadowColor: palette.shadow }]}>
+            <Ionicons name="send-outline" size={20} color={palette.background} />
+            <Text style={[styles.buttonText, { color: palette.background }]}>{t('notifications.immediate')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => handleSchedule(5)} style={[styles.button, styles.buttonInfo]}>
-            <Ionicons name="time-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>{t('notifications.in5s')}</Text>
+          <TouchableOpacity
+            onPress={() => handleSchedule(5)}
+            style={[styles.button, { backgroundColor: palette.accentSecondary, shadowColor: palette.shadow }]}>
+            <Ionicons name="time-outline" size={20} color={palette.text} />
+            <Text style={[styles.buttonText, { color: palette.text }]}>{t('notifications.in5s')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => handleSchedule(30)} style={[styles.button, styles.buttonInfo]}>
-            <Ionicons name="calendar-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>{t('notifications.in30s')}</Text>
+          <TouchableOpacity
+            onPress={() => handleSchedule(30)}
+            style={[styles.button, { backgroundColor: palette.icon, shadowColor: palette.shadow }]}>
+            <Ionicons name="calendar-outline" size={20} color={palette.background} />
+            <Text style={[styles.buttonText, { color: palette.background }]}>{t('notifications.in30s')}</Text>
           </TouchableOpacity>
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity onPress={() => setBadgeCount(5)} style={[styles.button, styles.buttonSmall, styles.buttonWarning]}>
-              <Ionicons name="ellipse" size={16} color="#fff" />
-              <Text style={styles.buttonTextSmall}>{t('notifications.badgeFive')}</Text>
+            <TouchableOpacity
+              onPress={() => setBadgeCount(5)}
+              style={[
+                styles.button,
+                styles.buttonSmall,
+                { backgroundColor: palette.warning, shadowColor: palette.shadow },
+              ]}>
+              <Ionicons name="ellipse" size={16} color={palette.background} />
+              <Text style={[styles.buttonTextSmall, { color: palette.background }]}>{t('notifications.badgeFive')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={clearBadge} style={[styles.button, styles.buttonSmall, styles.buttonDanger]}>
-              <Ionicons name="close-circle-outline" size={16} color="#fff" />
-              <Text style={styles.buttonTextSmall}>{t('notifications.clearBadge')}</Text>
+            <TouchableOpacity
+              onPress={clearBadge}
+              style={[
+                styles.button,
+                styles.buttonSmall,
+                { backgroundColor: palette.danger, shadowColor: palette.shadow },
+              ]}>
+              <Ionicons name="close-circle-outline" size={16} color={palette.background} />
+              <Text style={[styles.buttonTextSmall, { color: palette.background }]}>{t('notifications.clearBadge')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('notifications.results')}</Text>
+            <Text style={[styles.sectionTitle, { color: palette.text }]}>{t('notifications.results')}</Text>
             {testResults.length > 0 && (
               <TouchableOpacity onPress={handleClearResults}>
-                <Text style={styles.clearButton}>Effacer</Text>
+                <Text style={[styles.clearButton, { color: palette.tint }]}>Effacer</Text>
               </TouchableOpacity>
             )}
           </View>
 
           {testResults.length === 0 ? (
-            <View style={styles.emptyResults}>
-              <Ionicons name="document-text-outline" size={48} color="#9ca3af" />
-              <Text style={styles.emptyText}>{t('notifications.empty')}</Text>
-              <Text style={styles.emptySubtext}>Utilisez les boutons ci-dessus pour tester les notifications</Text>
+            <View style={[styles.emptyResults, { backgroundColor: palette.card, borderColor: palette.border }]}>
+              <Ionicons name="document-text-outline" size={48} color={palette.icon} />
+              <Text style={[styles.emptyText, { color: palette.text }]}>{t('notifications.empty')}</Text>
+              <Text style={[styles.emptySubtext, { color: palette.muted }]}>
+                Utilisez les boutons ci-dessus pour tester les notifications
+              </Text>
             </View>
           ) : (
-            <View style={styles.resultsContainer}>
+            <View style={[styles.resultsContainer, { backgroundColor: palette.card, borderColor: palette.border }]}>
               {testResults.map((result, index) => (
                 <View key={index} style={styles.resultItem}>
-                  <Text style={styles.resultText}>{result}</Text>
+                  <Text style={[styles.resultText, { color: palette.text }]}>{result}</Text>
                 </View>
               ))}
             </View>
@@ -186,9 +213,9 @@ export default function NotificationScreen() {
         </View>
 
         {isSimulator && (
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#3b82f6" />
-            <Text style={styles.infoText}>{t('notifications.simulatorInfo')}</Text>
+          <View style={[styles.infoBox, { backgroundColor: palette.card, borderColor: palette.border }]}>
+            <Ionicons name="information-circle" size={20} color={palette.icon} />
+            <Text style={[styles.infoText, { color: palette.text }]}>{t('notifications.simulatorInfo')}</Text>
           </View>
         )}
       </ScrollView>
@@ -199,7 +226,6 @@ export default function NotificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   header: {
     paddingHorizontal: 24,
@@ -207,6 +233,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
   },
   headerTop: {
     flexDirection: 'row',
@@ -217,14 +246,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
   },
   placeholder: {
     width: 40,
@@ -234,15 +262,14 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   statusCard: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
   },
   statusRow: {
     flexDirection: 'row',
@@ -252,34 +279,30 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    color: '#111827',
     fontWeight: '500',
   },
   tokenContainer: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   tokenLabel: {
     fontSize: 12,
-    color: '#6b7280',
     marginBottom: 4,
   },
   tokenText: {
     fontSize: 11,
-    color: '#111827',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   badgeContainer: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   badgeLabel: {
     fontSize: 14,
-    color: '#111827',
     fontWeight: '500',
   },
   scheduledContainer: {
@@ -287,7 +310,6 @@ const styles = StyleSheet.create({
   },
   scheduledLabel: {
     fontSize: 14,
-    color: '#6b7280',
   },
   section: {
     marginBottom: 24,
@@ -301,7 +323,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#111827',
     marginBottom: 16,
   },
   button: {
@@ -313,21 +334,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     gap: 8,
-  },
-  buttonPrimary: {
-    backgroundColor: '#a855f7',
-  },
-  buttonSuccess: {
-    backgroundColor: '#10b981',
-  },
-  buttonInfo: {
-    backgroundColor: '#3b82f6',
-  },
-  buttonWarning: {
-    backgroundColor: '#f59e0b',
-  },
-  buttonDanger: {
-    backgroundColor: '#ef4444',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
   },
   buttonSmall: {
     flex: 1,
@@ -339,20 +348,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   buttonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
   buttonTextSmall: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
   resultsContainer: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     maxHeight: 300,
+    borderWidth: 1,
   },
   resultItem: {
     paddingVertical: 8,
@@ -361,44 +368,39 @@ const styles = StyleSheet.create({
   },
   resultText: {
     fontSize: 12,
-    color: '#111827',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   emptyResults: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 32,
     alignItems: 'center',
+    borderWidth: 1,
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
     marginTop: 12,
     fontWeight: '500',
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9ca3af',
     marginTop: 4,
     textAlign: 'center',
   },
   clearButton: {
-    color: '#a855f7',
     fontSize: 14,
     fontWeight: '600',
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#dbeafe',
     borderRadius: 12,
     padding: 16,
     gap: 12,
     marginBottom: 24,
+    borderWidth: 1,
   },
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#1e40af',
     lineHeight: 20,
   },
 });

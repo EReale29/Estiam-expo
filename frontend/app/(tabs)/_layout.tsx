@@ -10,13 +10,22 @@ import { useI18n } from '@/contexts/i18n-context';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { t } = useI18n();
+  const palette = Colors[colorScheme ?? 'light'];
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: palette.tint,
+        tabBarInactiveTintColor: palette.tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarStyle: {
+          backgroundColor: palette.glass,
+          borderTopColor: palette.glassStroke,
+          shadowColor: palette.shadow,
+          paddingBottom: 4,
+          height: 70,
+        },
       }}>
       <Tabs.Screen
         name="index"

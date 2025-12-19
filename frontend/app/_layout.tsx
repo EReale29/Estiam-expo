@@ -10,6 +10,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, TouchableOpacity, Text, View } from 'react-native';
 import { useAuth, AuthProvider } from '@/contexts/auth-context';
 import { LanguageProvider } from '@/contexts/i18n-context';
+import { Colors } from '@/constants/theme';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -21,6 +22,7 @@ function RootLayoutContent() {
   const { isAuthenticated, isLoading, refreshAuth } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const palette = Colors[colorScheme ?? 'light'];
 
 
   // check auth
@@ -44,10 +46,37 @@ function RootLayoutContent() {
   }, [refreshAuth]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider
+      value={
+        colorScheme === 'dark'
+          ? {
+              ...DarkTheme,
+              colors: {
+                ...DarkTheme.colors,
+                primary: palette.tint,
+                background: palette.background,
+                card: palette.card,
+                text: palette.text,
+                border: palette.border,
+                notification: palette.accent,
+              },
+            }
+          : {
+              ...DefaultTheme,
+              colors: {
+                ...DefaultTheme.colors,
+                primary: palette.tint,
+                background: palette.background,
+                card: palette.card,
+                text: palette.text,
+                border: palette.border,
+                notification: palette.accent,
+              },
+            }
+      }>
       {/*Banner Offline*/}
       {!isOnline && (
-        <View style={styles.offlineBanner}>
+        <View style={[styles.offlineBanner, { backgroundColor: palette.danger, shadowColor: palette.shadow }]}>
           <Ionicons name='cloud-offline-outline' size={16} color='#fff' />
           <Text style={styles.bannerText}>
             Hors ligne {pendingCount > 0 && `• ${pendingCount} en attente`}
@@ -58,7 +87,12 @@ function RootLayoutContent() {
       {/*Banner Sync */}
 
       {isOnline && pendingCount > 0 && (
-        <TouchableOpacity style={styles.syncBanner} onPress={syncNow}>
+        <TouchableOpacity
+          style={[
+            styles.syncBanner,
+            { backgroundColor: palette.success, shadowColor: palette.shadow, borderColor: palette.glassStroke },
+          ]}
+          onPress={syncNow}>
           <Ionicons
             name={isSyncing ? "sync" : "sync-outline"}
             size={16}
@@ -78,7 +112,7 @@ function RootLayoutContent() {
         <Stack.Screen name="trip/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }
@@ -87,22 +121,28 @@ function RootLayoutContent() {
 
 const styles = StyleSheet.create({
   offlineBanner: {
-    backgroundColor: '#ef4444',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
     paddingTop: 50,
     gap: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
   },
   syncBanner: {
-    backgroundColor: '#f59e0b',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
     paddingTop: 50,
     gap: 8,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    borderWidth: 1,
   },
   bannerText: {
     color: '#fff',
