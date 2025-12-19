@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator, useWindowDimensions, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator, useWindowDimensions, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -21,9 +21,7 @@ export default function ProfileScreen() {
   const { user, refreshAuth } = useAuth();
   const { t } = useI18n();
   const { data, isLoading } = useDashboard();
-  const [isSaving, setIsSaving] = useState(false);
-  const [name, setName] = useState(user?.name || '');
-  const [username, setUsername] = useState(user?.username || '');
+  const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [avatar, setAvatar] = useState(user?.avatar || '');
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
@@ -32,8 +30,6 @@ export default function ProfileScreen() {
   const layoutWidth = { width: '100%', maxWidth: isWide ? 1100 : undefined, alignSelf: 'center' };
 
   useEffect(() => {
-    setName(user?.name || '');
-    setUsername(user?.username || '');
     setAvatar(user?.avatar || '');
   }, [user]);
 
@@ -52,21 +48,18 @@ export default function ProfileScreen() {
       quality: 0.8,
     });
     if (result.canceled) return;
-    const photoUri = result.assets[0].uri;
-    const uploaded = await API.uploadImage(photoUri);
-    setAvatar(uploaded);
-  };
-
-  const handleSaveProfile = async () => {
-    setIsSaving(true);
     try {
-      const updated = await userApi.updateProfile({ name, username, avatar });
+      setIsUpdatingAvatar(true);
+      const photoUri = result.assets[0].uri;
+      const uploaded = await API.uploadImage(photoUri);
+      const updated = await userApi.updateProfile({ avatar: uploaded });
       await auth.saveUser(updated);
       await refreshAuth();
+      setAvatar(uploaded);
     } catch (error) {
-      console.warn('Profile update failed', error);
+      Alert.alert('Erreur', 'Impossible de mettre à jour la photo de profil');
     } finally {
-      setIsSaving(false);
+      setIsUpdatingAvatar(false);
     }
   };
 
@@ -96,14 +89,16 @@ export default function ProfileScreen() {
               <View style={styles.profileInfo}>
                 <View style={styles.nameRow}>
                   <Text style={[styles.profileName, { color: palette.text }]}>{user?.name || 'TravelMate'}</Text>
-                  <TouchableOpacity style={[styles.inlineEdit, { borderColor: palette.border }]} onPress={() => undefined}>
+                  <TouchableOpacity
+                    style={[styles.inlineEdit, { borderColor: palette.border }]}
+                    onPress={() => router.push('/modal/edit-profile')}>
                     <Ionicons name="pencil" size={14} color={palette.text} />
                   </TouchableOpacity>
                 </View>
                 <Text style={[styles.profileEmail, { color: palette.muted }]}>{user?.email}</Text>
               </View>
             </View>
-            {isLoading ? (
+            {isLoading || isUpdatingAvatar ? (
               <ActivityIndicator color={palette.tint} />
             ) : (
               <View style={styles.statsGrid}>
@@ -121,36 +116,7 @@ export default function ProfileScreen() {
           </View>
         </LinearGradient>
 
-        <View style={[styles.content, { backgroundColor: palette.background }, layoutWidth]}>
-          <View style={[styles.formCard, { borderColor: palette.border, backgroundColor: palette.card, shadowColor: palette.shadow }]}>
-            <Text style={[styles.formTitle, { color: palette.text }]}>{t('profile.edit')}</Text>
-
-            <Text style={[styles.label, { color: palette.muted }]}>{t('profile.username')}</Text>
-            <TextInput
-              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-              value={username}
-              onChangeText={setUsername}
-              placeholder={t('profile.username')}
-              placeholderTextColor={palette.muted}
-            />
-            <Text style={[styles.label, { color: palette.muted }]}>{t('auth.username')}</Text>
-            <TextInput
-              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-              value={name}
-              onChangeText={setName}
-              placeholder={t('auth.username')}
-              placeholderTextColor={palette.muted}
-            />
-
-            <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: palette.tint, shadowColor: palette.shadow }]}
-              onPress={handleSaveProfile}
-              disabled={isSaving}>
-              <Text style={[styles.saveText, { color: palette.background }]}>{isSaving ? t('general.loading') : t('profile.save')}</Text>
-            </TouchableOpacity>
-          </View>
-
-        </View>
+        <View style={[styles.content, { backgroundColor: palette.background }, layoutWidth]} />
       </ScrollView>
     </SafeAreaView>
   );
