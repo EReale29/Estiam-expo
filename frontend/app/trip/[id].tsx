@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import MapView, { Marker } from 'react-native-maps';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { API } from '@/services/api';
 import { Trip, TripActivity, TripJournalEntry } from '@/types/models';
@@ -25,6 +26,10 @@ export default function TripDetailScreen() {
   const [journalEntries, setJournalEntries] = useState<TripJournalEntry[]>([]);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
+  const [showActivityDatePicker, setShowActivityDatePicker] = useState(false);
+  const [showActivityTimePicker, setShowActivityTimePicker] = useState(false);
+  const [showJournalDatePicker, setShowJournalDatePicker] = useState(false);
+  const [showJournalTimePicker, setShowJournalTimePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +38,28 @@ export default function TripDetailScreen() {
   const { width } = useWindowDimensions();
   const isWide = width > 880;
   const layoutWidth = { width: '100%', maxWidth: isWide ? 1080 : undefined, alignSelf: 'center' };
+  const toTimestamp = (dateStr?: string, timeStr?: string, fallback?: number) => {
+    if (dateStr) {
+      const iso = `${dateStr}${timeStr ? `T${timeStr}` : 'T00:00'}`;
+      const ts = new Date(iso).getTime();
+      if (!Number.isNaN(ts)) return ts;
+    }
+    return fallback ?? 0;
+  };
+  const formatDisplayDateTime = (dateStr?: string, timeStr?: string) => {
+    if (!dateStr && !timeStr) return '';
+    const [year, month, day] = (dateStr || '').split('-');
+    const formattedDate = dateStr ? `${day?.padStart(2, '0')}-${month?.padStart(2, '0')}-${year}` : '';
+    const formattedTime = timeStr ? timeStr.padStart(5, '0') : '';
+    const payload = [formattedDate, formattedTime].filter(Boolean).join(' | ');
+    return payload ? `[${payload}]` : '';
+  };
   const sortedJournalEntries = useMemo(
     () =>
       [...journalEntries].sort((a, b) => {
-        const dateA = new Date(`${a.date || ''} ${a.time || ''}`).getTime() || 0;
-        const dateB = new Date(`${b.date || ''} ${b.time || ''}`).getTime() || 0;
-        return dateA - dateB;
+        const tsA = toTimestamp(a.date, a.time, a.created_at);
+        const tsB = toTimestamp(b.date, b.time, b.created_at);
+        return tsA - tsB;
       }),
     [journalEntries]
   );
@@ -107,6 +128,27 @@ export default function TripDetailScreen() {
     setEditingActivityId(null);
   };
 
+  const parseDateValue = (value?: string) => {
+    if (value) {
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    return new Date();
+  };
+
+  const parseTimeValue = (value?: string) => {
+    const base = new Date();
+    if (value) {
+      const [hours, minutes] = value.split(':').map((v) => parseInt(v, 10));
+      if (!Number.isNaN(hours)) {
+        base.setHours(hours, Number.isNaN(minutes) ? 0 : minutes, 0, 0);
+        return base;
+      }
+    }
+    base.setSeconds(0, 0);
+    return base;
+  };
+
   const handleSubmitActivity = async () => {
     if (!trip) return;
     if (!activityForm.title.trim()) {
@@ -129,6 +171,34 @@ export default function TripDetailScreen() {
     } finally {
       setIsActionLoading(false);
     }
+  };
+
+  const handleActivityDateChange = (_event: any, selectedDate?: Date) => {
+    setShowActivityDatePicker(false);
+    if (!selectedDate) return;
+    const iso = selectedDate.toISOString().slice(0, 10);
+    setActivityForm((prev) => ({ ...prev, date: iso }));
+  };
+
+  const handleActivityTimeChange = (_event: any, selectedTime?: Date) => {
+    setShowActivityTimePicker(false);
+    if (!selectedTime) return;
+    const timeString = selectedTime.toTimeString().slice(0, 5);
+    setActivityTime(timeString);
+  };
+
+  const handleJournalDateChange = (_event: any, selectedDate?: Date) => {
+    setShowJournalDatePicker(false);
+    if (!selectedDate) return;
+    const iso = selectedDate.toISOString().slice(0, 10);
+    setNotesForm((prev) => ({ ...prev, date: iso }));
+  };
+
+  const handleJournalTimeChange = (_event: any, selectedTime?: Date) => {
+    setShowJournalTimePicker(false);
+    if (!selectedTime) return;
+    const timeString = selectedTime.toTimeString().slice(0, 5);
+    setNotesForm((prev) => ({ ...prev, time: timeString }));
   };
 
   const handleEditActivity = (activity: TripActivity) => {
@@ -299,7 +369,7 @@ export default function TripDetailScreen() {
                     <View style={{ flex: 1, gap: 4 }}>
                       <Text style={[styles.activityTitle, { color: palette.text }]}>{entry.title}</Text>
                       <Text style={[styles.activityMeta, { color: palette.muted }]}>
-                        {[entry.date, entry.time].filter(Boolean).join(' • ')}
+                        {formatDisplayDateTime(entry.date, entry.time)}
                       </Text>
                     </View>
                     <TouchableOpacity onPress={() => handleDeleteJournal(entry.id)} style={[styles.iconButton, { borderColor: palette.border }]}>
@@ -323,22 +393,22 @@ export default function TripDetailScreen() {
                   onChangeText={(text) => setActivityForm((prev) => ({ ...prev, title: text }))}
                   editable={!isActionLoading}
                 />
-                <TextInput
-                  style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-                  placeholder="Date (YYYY-MM-DD)"
-                  placeholderTextColor={palette.muted}
-                  value={activityForm.date}
-                  onChangeText={(text) => setActivityForm((prev) => ({ ...prev, date: text }))}
-                  editable={!isActionLoading}
-                />
-                <TextInput
-                  style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-                  placeholder="Heure (HH:mm)"
-                  placeholderTextColor={palette.muted}
-                  value={activityTime}
-                  onChangeText={setActivityTime}
-                  editable={!isActionLoading}
-                />
+                <TouchableOpacity
+                  style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
+                  onPress={() => setShowActivityDatePicker(true)}
+                  disabled={isActionLoading}>
+                  <Text style={[styles.pickerButtonText, { color: palette.text }]}>
+                    {activityForm.date ? formatDisplayDateTime(activityForm.date, '') : 'Date'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
+                  onPress={() => setShowActivityTimePicker(true)}
+                  disabled={isActionLoading}>
+                  <Text style={[styles.pickerButtonText, { color: palette.text }]}>
+                    {activityTime ? formatDisplayDateTime('', activityTime) : 'Heure'}
+                  </Text>
+                </TouchableOpacity>
                 <TextInput
                   style={[styles.input, { borderColor: palette.border, color: palette.text }]}
                   placeholder="Description"
@@ -372,7 +442,7 @@ export default function TripDetailScreen() {
                       <Text style={[styles.activityTitle, { color: palette.text }]}>{activity.title}</Text>
                       {(activity.date || activity.time || activity.description) && (
                         <Text style={[styles.activityMeta, { color: palette.muted }]}>
-                          {[activity.date, activity.time, activity.description].filter(Boolean).join(' • ')}
+                          {[formatDisplayDateTime(activity.date, activity.time), activity.description].filter(Boolean).join(' • ')}
                         </Text>
                       )}
                     </View>
@@ -423,6 +493,41 @@ export default function TripDetailScreen() {
         </ScrollView>
       )}
 
+      {showActivityDatePicker && (
+        <DateTimePicker
+          value={parseDateValue(activityForm.date)}
+          mode="date"
+          display="default"
+          onChange={handleActivityDateChange}
+        />
+      )}
+      {showActivityTimePicker && (
+        <DateTimePicker
+          value={parseTimeValue(activityTime)}
+          mode="time"
+          is24Hour
+          display="default"
+          onChange={handleActivityTimeChange}
+        />
+      )}
+      {showJournalDatePicker && (
+        <DateTimePicker
+          value={parseDateValue(notesForm.date)}
+          mode="date"
+          display="default"
+          onChange={handleJournalDateChange}
+        />
+      )}
+      {showJournalTimePicker && (
+        <DateTimePicker
+          value={parseTimeValue(notesForm.time)}
+          mode="time"
+          is24Hour
+          display="default"
+          onChange={handleJournalTimeChange}
+        />
+      )}
+
       <Modal visible={isNotesModalVisible} transparent animationType="fade" onRequestClose={() => setIsNotesModalVisible(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
@@ -434,7 +539,7 @@ export default function TripDetailScreen() {
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={[styles.activityTitle, { color: palette.text }]}>{entry.title}</Text>
                       <Text style={[styles.activityMeta, { color: palette.muted }]}>
-                        {[entry.date, entry.time].filter(Boolean).join(' • ')}
+                        {formatDisplayDateTime(entry.date, entry.time)}
                       </Text>
                     </View>
                     <View style={styles.activityActions}>
@@ -457,22 +562,22 @@ export default function TripDetailScreen() {
               onChangeText={(text) => setNotesForm((prev) => ({ ...prev, title: text }))}
               editable={!isActionLoading}
             />
-            <TextInput
-              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-              placeholder="Date (YYYY-MM-DD)"
-              placeholderTextColor={palette.muted}
-              value={notesForm.date}
-              onChangeText={(text) => setNotesForm((prev) => ({ ...prev, date: text }))}
-              editable={!isActionLoading}
-            />
-            <TextInput
-              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-              placeholder="Heure (HH:mm)"
-              placeholderTextColor={palette.muted}
-              value={notesForm.time}
-              onChangeText={(text) => setNotesForm((prev) => ({ ...prev, time: text }))}
-              editable={!isActionLoading}
-            />
+            <TouchableOpacity
+              style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
+              onPress={() => setShowJournalDatePicker(true)}
+              disabled={isActionLoading}>
+              <Text style={[styles.pickerButtonText, { color: palette.text }]}>
+                {notesForm.date ? formatDisplayDateTime(notesForm.date, '') : 'Date'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
+              onPress={() => setShowJournalTimePicker(true)}
+              disabled={isActionLoading}>
+              <Text style={[styles.pickerButtonText, { color: palette.text }]}>
+                {notesForm.time ? formatDisplayDateTime('', notesForm.time) : 'Heure'}
+              </Text>
+            </TouchableOpacity>
             <TextInput
               multiline
               style={[styles.notesInput, { borderColor: palette.border, color: palette.text, backgroundColor: palette.surface }]}
@@ -640,6 +745,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  pickerButton: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  pickerButtonText: {
+    fontWeight: '600',
   },
   modalBackdrop: {
     flex: 1,
