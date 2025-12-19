@@ -71,8 +71,9 @@ export default function CollectionScreen() {
     });
   }, [photos, selectedCountry, selectedTripId, fromDate, toDate]);
 
-  const renderChip = (label: string, isActive: boolean, onPress: () => void) => (
+  const renderChip = (label: string, isActive: boolean, onPress: () => void, key?: string) => (
     <TouchableOpacity
+      key={key ?? label}
       style={[
         styles.chip,
         { borderColor: palette.border },
@@ -98,16 +99,16 @@ export default function CollectionScreen() {
         <View style={[styles.filtersCard, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
           <Text style={[styles.cardTitle, { color: palette.text }]}>{t('home.filters')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-            {renderChip(t('collection.filterCountry'), Boolean(selectedCountry), () => setSelectedCountry(null))}
+            {renderChip(t('collection.filterCountry'), Boolean(selectedCountry), () => setSelectedCountry(null), 'reset-country')}
             {countries.map((country) =>
-              renderChip(country, selectedCountry === country, () => setSelectedCountry(country))
+              renderChip(country, selectedCountry === country, () => setSelectedCountry(country), `country-${country}`)
             )}
           </ScrollView>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-            {renderChip(t('collection.filterTrip'), Boolean(selectedTripId), () => setSelectedTripId(null))}
+            {renderChip(t('collection.filterTrip'), Boolean(selectedTripId), () => setSelectedTripId(null), 'reset-trip')}
             {tripOptions.map((trip) =>
-              renderChip(trip.title, selectedTripId === trip.id, () => setSelectedTripId(trip.id))
+              renderChip(trip.title, selectedTripId === trip.id, () => setSelectedTripId(trip.id), `trip-${trip.id}`)
             )}
           </ScrollView>
 
