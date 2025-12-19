@@ -1,5 +1,6 @@
 import { Trip, DashboardResponse } from '@/types/models';
 import { http } from './http';
+import { auth } from './auth';
 import { OFFLINE, TripPayload } from './offline';
 
 export interface TripInput {
