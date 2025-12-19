@@ -39,8 +39,6 @@ export default function AddTripModal() {
 
   const [tripTitle, setTripTitle] = useState('');
   const [destinationSearch, setDestinationSearch] = useState('');
-  const [city, setCity] = useState('');
-  const [country, setCountry] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [description, setDescription] = useState('');
@@ -152,8 +150,6 @@ export default function AddTripModal() {
         const country = addr.country || '';
         const formattedAddress = `${city}${city && country ? ', ' : ''}${country}`.trim();
         setDestinationSearch(formattedAddress);
-        setCity(city);
-        setCountry(country);
       }
       setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
     } catch (error) {
@@ -180,7 +176,7 @@ export default function AddTripModal() {
   };
 
   const geocodeDestination = async (): Promise<{ lat: number; lng: number } | undefined> => {
-    const query = destinationSearch.trim() || `${city}, ${country}`;
+    const query = destinationSearch.trim();
     if (!query) return undefined;
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
@@ -248,8 +244,6 @@ export default function AddTripModal() {
         const trip = await API.getTrip(editingId);
         setTripTitle(trip.title);
         setDestinationSearch(trip.destination || '');
-        setCity(trip.city || '');
-        setCountry(trip.country || '');
         setStartDate(trip.startDate ? new Date(trip.startDate) : null);
         setEndDate(trip.endDate ? new Date(trip.endDate) : null);
         setDescription(trip.description || '');
@@ -267,11 +261,7 @@ export default function AddTripModal() {
       Alert.alert(t('addTrip.required'));
       return;
     }
-    if (!city.trim() || !country.trim()) {
-      Alert.alert(t('addTrip.destinationFormat'));
-      return;
-    }
-    const formattedDestination = destinationSearch || `${city}, ${country}`.trim();
+    const formattedDestination = destinationSearch.trim();
     if (!formattedDestination || !isValidDestination(formattedDestination)) {
       Alert.alert(t('addTrip.destinationFormat'));
       return;
@@ -293,11 +283,12 @@ export default function AddTripModal() {
       }
 
       const finalPhotos = [...existingPhotos, ...photos];
+      const [city, country] = formattedDestination.split(',').map((p) => p.trim());
       const payload = {
         title: tripTitle,
         destination: formattedDestination,
-        city,
-        country,
+        city: city || '',
+        country: country || '',
         startDate: startDate ? startDate.toISOString().split('T')[0] : '',
         endDate: endDate ? endDate.toISOString().split('T')[0] : '',
         description,
