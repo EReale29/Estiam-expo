@@ -156,6 +156,31 @@ export default function TripDetailScreen() {
     }
   };
 
+  const handleEditJournal = (entry: TripJournalEntry) => {
+    setEditingEntryId(entry.id);
+    setNotesForm({
+      title: entry.title,
+      content: entry.content || '',
+      date: entry.date || '',
+      time: entry.time || '',
+    });
+    setIsNotesModalVisible(true);
+  };
+
+  const handleDeleteJournal = async (entryId: string) => {
+    if (!trip) return;
+    try {
+      setIsActionLoading(true);
+      await API.deleteTripJournalEntry(trip.id, entryId);
+      setJournalEntries((prev) => prev.filter((e) => e.id !== entryId));
+      if (editingEntryId === entryId) setEditingEntryId(null);
+    } catch (err) {
+      Alert.alert('Erreur', err instanceof Error ? err.message : "Impossible de supprimer l'entrée");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!id) return;
     Alert.alert('Supprimer', 'Voulez-vous supprimer ce voyage ?', [
@@ -693,27 +718,3 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 });
-  const handleEditJournal = (entry: TripJournalEntry) => {
-    setEditingEntryId(entry.id);
-    setNotesForm({
-      title: entry.title,
-      content: entry.content || '',
-      date: entry.date || '',
-      time: entry.time || '',
-    });
-    setIsNotesModalVisible(true);
-  };
-
-  const handleDeleteJournal = async (entryId: string) => {
-    if (!trip) return;
-    try {
-      setIsActionLoading(true);
-      await API.deleteTripJournalEntry(trip.id, entryId);
-      setJournalEntries((prev) => prev.filter((e) => e.id !== entryId));
-      if (editingEntryId === entryId) setEditingEntryId(null);
-    } catch (err) {
-      Alert.alert('Erreur', err instanceof Error ? err.message : "Impossible de supprimer l'entrée");
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
