@@ -153,15 +153,24 @@ export default function AddTripModal() {
   };
 
   const geocodeDestination = async (): Promise<{ lat: number; lng: number } | undefined> => {
-    if (!destination.trim()) return undefined;
+    const query = destination.trim();
+    if (!query) return undefined;
     try {
-      const results = await Location.geocodeAsync(destination);
-      if (results.length === 0) {
-        Alert.alert('Erreur', t('addTrip.destinationFormat'));
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'TravelMateApp/1.0 (expo)'
+        }
+      });
+      if (!response.ok) {
         return undefined;
       }
-      const best = results[0];
-      return { lat: best.latitude, lng: best.longitude };
+      const data = (await response.json()) as Array<{ lat: string; lon: string }>;
+      if (!data || data.length === 0) {
+        return undefined;
+      }
+      const first = data[0];
+      return { lat: parseFloat(first.lat), lng: parseFloat(first.lon) };
     } catch {
       return undefined;
     }
@@ -186,7 +195,11 @@ export default function AddTripModal() {
       setUploadProgress(0);
 
       const { cover, photos } = await uploadImages();
-      const resolvedLocation = location || (await geocodeDestination());
+      const resolvedLocation = await geocodeDestination();
+      if (!resolvedLocation) {
+        Alert.alert('Erreur', t('addTrip.destinationFormat'));
+        return;
+      }
 
       const newTrip = await API.createTrip({
         title: tripTitle,
