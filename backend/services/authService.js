@@ -1,6 +1,6 @@
 import { TokenService } from "./tokenService.js";
 import { UserService } from "./userService.js";
-import { parseRoles } from "../utils/validation.js";
+import { normalizeUserFields, parseRoles, validateUserPayload } from "../utils/validation.js";
 
 export class AuthService {
   constructor() {
@@ -10,24 +10,26 @@ export class AuthService {
 
   async register(payload) {
     const { email, password, name, username } = payload || {};
-    const validationError = this.userService.validateUserPayload({ email, password, username });
+    const normalized = normalizeUserFields({ email, password, name, username });
+    const validationError = validateUserPayload(normalized);
     if (validationError) return { error: validationError, status: 400 };
 
-    const existingEmail = this.userService.findByEmail(email);
+    const existingEmail = this.userService.findByEmail(normalized.email);
     if (existingEmail) return { error: "Email already in use", status: 409 };
-    const existingUsername = this.userService.findByUsername(username);
+    const existingUsername = this.userService.findByUsername(normalized.username);
     if (existingUsername) return { error: "Username already in use", status: 409 };
 
-    const userRow = await this.userService.createUser({ email, password, name, username });
-    const tokens = this.tokenService.issueTokens({ id: userRow.id, email, roles: parseRoles(userRow.roles) });
+    const userRow = await this.userService.createUser(normalized);
+    const tokens = this.tokenService.issueTokens({ id: userRow.id, email: normalized.email, roles: parseRoles(userRow.roles) });
     return { user: this.userService.sanitize(userRow), ...tokens, status: 201 };
   }
 
   async login(payload) {
     const { email, password } = payload || {};
-    if (!email || !password) return { error: "Email and password are required", status: 400 };
+    const normalized = normalizeUserFields({ email, password });
+    if (!normalized.email || !password) return { error: "Email and password are required", status: 400 };
 
-    const userRow = this.userService.findByEmail(email);
+    const userRow = this.userService.findByEmail(normalized.email);
     if (!userRow) return { error: "Invalid credentials", status: 401 };
 
     const match = await this.userService.verifyPassword(userRow, password);
