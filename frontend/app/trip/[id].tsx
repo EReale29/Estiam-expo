@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import MapView, { Marker } from 'react-native-maps';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 
 import { API } from '@/services/api';
 import { Trip, TripActivity, TripJournalEntry } from '@/types/models';
@@ -28,7 +28,7 @@ export default function TripDetailScreen() {
   const [journalTime, setJournalTime] = useState<Date | null>(null);
   const [journalEntries, setJournalEntries] = useState<TripJournalEntry[]>([]);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
-  const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
+  const [showJournalForm, setShowJournalForm] = useState(false);
   const [showActivityDatePicker, setShowActivityDatePicker] = useState(false);
   const [showActivityTimePicker, setShowActivityTimePicker] = useState(false);
   const [showJournalDatePicker, setShowJournalDatePicker] = useState(false);
@@ -104,10 +104,10 @@ export default function TripDetailScreen() {
 
   const handleSaveNotes = async () => {
     if (!trip) return;
-    if (!notesForm.title.trim()) {
-      Alert.alert('Titre requis', 'Ajoutez un titre pour le journal');
-      return;
-    }
+    if (!notesForm.content.trim()) {
+        Alert.alert('Contenu requis', "Ajoutez du contenu pour l'entrée du journal");
+        return;
+      }
     try {
       setIsActionLoading(true);
       const payload = {
@@ -126,7 +126,7 @@ export default function TripDetailScreen() {
       setJournalDate(null);
       setJournalTime(null);
       setEditingEntryId(null);
-      setIsNotesModalVisible(false);
+      setShowJournalForm(false);
     } catch (err) {
       Alert.alert('Erreur', err instanceof Error ? err.message : 'Impossible de sauvegarder le journal');
     } finally {
@@ -207,28 +207,75 @@ export default function TripDetailScreen() {
     }
   };
 
-  const handleActivityDateChange = (_event: any, selectedDate?: Date) => {
-    setShowActivityDatePicker(false);
-    if (!selectedDate) return;
-    setActivityDate(selectedDate);
+  const handleActivityDateChange = (event: any, selectedDate?: Date) => {
+    // Sur Android l'event contient `type` ('set' | 'dismissed')
+    if (Platform.OS === 'android') {
+      setShowActivityDatePicker(false);
+      if (event?.type === 'set' && selectedDate) setActivityDate(selectedDate);
+      return;
+    }
+    // iOS: on peut recevoir la date en continu (inline), on met à jour seulement si sélection
+    if (selectedDate) setActivityDate(selectedDate);
   };
 
-  const handleActivityTimeChange = (_event: any, selectedTime?: Date) => {
-    setShowActivityTimePicker(false);
-    if (!selectedTime) return;
-    setActivityTime(selectedTime);
+  const handleActivityTimeChange = (event: any, selectedTime?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowActivityTimePicker(false);
+      if (event?.type === 'set' && selectedTime) setActivityTime(selectedTime);
+      return;
+    }
+    if (selectedTime) setActivityTime(selectedTime);
   };
 
-  const handleJournalDateChange = (_event: any, selectedDate?: Date) => {
-    setShowJournalDatePicker(false);
-    if (!selectedDate) return;
-    setJournalDate(selectedDate);
+  const handleJournalDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowJournalDatePicker(false);
+      if (event?.type === 'set' && selectedDate) setJournalDate(selectedDate);
+      return;
+    }
+    if (selectedDate) setJournalDate(selectedDate);
   };
 
-  const handleJournalTimeChange = (_event: any, selectedTime?: Date) => {
-    setShowJournalTimePicker(false);
-    if (!selectedTime) return;
-    setJournalTime(selectedTime);
+  const handleJournalTimeChange = (event: any, selectedTime?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowJournalTimePicker(false);
+      if (event?.type === 'set' && selectedTime) setJournalTime(selectedTime);
+      return;
+    }
+    if (selectedTime) setJournalTime(selectedTime);
+  };
+
+  // Openers: on Android use DateTimePickerAndroid to show native dialog immediately
+  const openActivityDatePicker = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({ value: activityDate || new Date(), onChange: handleActivityDateChange, mode: 'date' });
+      return;
+    }
+    setShowActivityDatePicker(true);
+  };
+
+  const openActivityTimePicker = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({ value: activityTime || new Date(), onChange: handleActivityTimeChange, mode: 'time', is24Hour: true });
+      return;
+    }
+    setShowActivityTimePicker(true);
+  };
+
+  const openJournalDatePicker = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({ value: journalDate || new Date(), onChange: handleJournalDateChange, mode: 'date' });
+      return;
+    }
+    setShowJournalDatePicker(true);
+  };
+
+  const openJournalTimePicker = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({ value: journalTime || new Date(), onChange: handleJournalTimeChange, mode: 'time', is24Hour: true });
+      return;
+    }
+    setShowJournalTimePicker(true);
   };
 
   const handleEditActivity = (activity: TripActivity) => {
@@ -259,12 +306,12 @@ export default function TripDetailScreen() {
   const handleEditJournal = (entry: TripJournalEntry) => {
     setEditingEntryId(entry.id);
     setNotesForm({
-      title: entry.title,
+      title: '',
       content: entry.content || '',
     });
     setJournalDate(entry.date ? parseDateValue(entry.date) : null);
     setJournalTime(entry.time ? parseTimeValue(entry.time) : null);
-    setIsNotesModalVisible(true);
+    setShowJournalForm(true);
   };
 
   const handleDeleteJournal = async (entryId: string) => {
@@ -384,7 +431,15 @@ export default function TripDetailScreen() {
             <View style={[styles.cardSection, { borderColor: palette.border }]}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: palette.text }]}>Journal de bord</Text>
-                <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.tint }]} onPress={() => setIsNotesModalVisible(true)}>
+                <TouchableOpacity
+                  style={[styles.saveButton, { backgroundColor: palette.tint }]}
+                  onPress={() => {
+                    setShowJournalForm(true);
+                    setEditingEntryId(null);
+                    setNotesForm({ title: '', content: '' });
+                    setJournalDate(null);
+                    setJournalTime(null);
+                  }}>
                   <Text style={[styles.saveButtonText, { color: palette.background }]}>Ajouter</Text>
                 </TouchableOpacity>
               </View>
@@ -397,23 +452,68 @@ export default function TripDetailScreen() {
                     style={[styles.activityItem, { borderColor: palette.border }]}
                     onPress={() => handleEditJournal(entry)}>
                     <View style={{ flex: 1, gap: 4 }}>
-                      <Text style={[styles.activityTitle, { color: palette.text }]}>{entry.title}</Text>
+                          <Text style={[styles.activityTitle, { color: palette.text }]} numberOfLines={2}>{entry.content || entry.title}</Text>
                       <Text style={[styles.activityMeta, { color: palette.muted }]}>
                         {formatDisplayDateTime(entry.date, entry.time)}
                       </Text>
                     </View>
-                    <TouchableOpacity onPress={() => handleDeleteJournal(entry.id)} style={[styles.iconButton, { borderColor: palette.border }]}>
+                    <TouchableOpacity onPress={() => handleDeleteJournal(entry.id)} style={[styles.iconButton, { borderColor: palette.border }]}> 
                       <Ionicons name="trash" size={16} color={palette.danger} />
                     </TouchableOpacity>
                   </TouchableOpacity>
                 ))
               )}
             </View>
+              {/* Journal form inline (remplace le modal) */}
+              {showJournalForm && (
+                <View style={{ gap: 8, marginTop: 8 }}>
+                  {/* Title removed for journal entries per request */}
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
+                      onPress={openJournalDatePicker}
+                      disabled={isActionLoading}>
+                      <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatDateLabel(journalDate)}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
+                      onPress={openJournalTimePicker}
+                      disabled={isActionLoading}>
+                      <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatTimeLabel(journalTime)}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    multiline
+                    style={[styles.notesInput, { borderColor: palette.border, color: palette.text, backgroundColor: palette.surface }]}
+                    placeholder="Contenu"
+                    placeholderTextColor={palette.muted}
+                    value={notesForm.content}
+                    onChangeText={(text) => setNotesForm((prev) => ({ ...prev, content: text }))}
+                    editable={!isActionLoading}
+                  />
+                  <View style={styles.modalActions}>
+                    {editingEntryId && (
+                      <TouchableOpacity onPress={() => handleDeleteJournal(editingEntryId)} style={[styles.iconButton, { borderColor: palette.border }]}> 
+                        <Ionicons name="trash" size={16} color={palette.danger} />
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={[styles.saveButton, { backgroundColor: palette.tint, flex: 1 }]}
+                      onPress={handleSaveNotes}
+                      disabled={isActionLoading}>
+                      <Text style={[styles.saveButtonText, { color: palette.background }]}>{isActionLoading ? t('general.loading') : 'Enregistrer'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setShowJournalForm(false); setEditingEntryId(null); setNotesForm({ title: '', content: '' }); setJournalDate(null); setJournalTime(null); }} style={styles.cancelButton}>
+                      <Text style={[styles.cancelButtonText, { color: palette.text }]}>Annuler</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
 
-            <View style={[styles.cardSection, { borderColor: palette.border }]}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: palette.text }]}>Activités</Text>
-              </View>
+              <View style={[styles.cardSection, { borderColor: palette.border }]}> 
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: palette.text }]}>Activités</Text>
+                </View>
               <View style={styles.formRow}>
                 <TextInput
                   style={[styles.input, { borderColor: palette.border, color: palette.text }]}
@@ -425,13 +525,13 @@ export default function TripDetailScreen() {
                 />
                 <TouchableOpacity
                   style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
-                  onPress={() => setShowActivityDatePicker(true)}
+                  onPress={openActivityDatePicker}
                   disabled={isActionLoading}>
                   <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatDateLabel(activityDate)}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
-                  onPress={() => setShowActivityTimePicker(true)}
+                  onPress={openActivityTimePicker}
                   disabled={isActionLoading}>
                   <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatTimeLabel(activityTime)}</Text>
                 </TouchableOpacity>
@@ -519,117 +619,136 @@ export default function TripDetailScreen() {
         </ScrollView>
       )}
 
-      {showActivityDatePicker && (
+      {showActivityDatePicker && Platform.OS === 'android' && (
         <DateTimePicker
           value={activityDate || new Date()}
           mode="date"
-          display="default"
+          display="calendar"
           onChange={handleActivityDateChange}
         />
       )}
-      {showActivityTimePicker && (
+      {showActivityDatePicker && Platform.OS === 'ios' && (
+        <Modal transparent animationType="fade" onRequestClose={() => setShowActivityDatePicker(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.modalCard, { maxWidth: 360, backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+              <Text style={[styles.sectionTitle, { color: palette.text }]}>Sélectionner la date</Text>
+              <DateTimePicker
+                value={activityDate || new Date()}
+                mode="date"
+                display="spinner"
+                onChange={(_e, d) => { if (d) setActivityDate(d); }}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setShowActivityDatePicker(false)}>
+                  <Text style={[styles.cancelButtonText, { color: palette.text }]}>Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.tint, flex: 1 }]} onPress={() => setShowActivityDatePicker(false)}>
+                  <Text style={[styles.saveButtonText, { color: palette.background }]}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+      {showActivityTimePicker && Platform.OS === 'android' && (
         <DateTimePicker
           value={activityTime || new Date()}
           mode="time"
           is24Hour
-          display="default"
+          display="clock"
           onChange={handleActivityTimeChange}
         />
       )}
-      {showJournalDatePicker && (
+      {showActivityTimePicker && Platform.OS === 'ios' && (
+        <Modal transparent animationType="fade" onRequestClose={() => setShowActivityTimePicker(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.modalCard, { maxWidth: 360, backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+              <Text style={[styles.sectionTitle, { color: palette.text }]}>Sélectionner l'heure</Text>
+              <DateTimePicker
+                value={activityTime || new Date()}
+                mode="time"
+                display="spinner"
+                is24Hour
+                onChange={(_e, d) => { if (d) setActivityTime(d); }}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setShowActivityTimePicker(false)}>
+                  <Text style={[styles.cancelButtonText, { color: palette.text }]}>Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.tint, flex: 1 }]} onPress={() => setShowActivityTimePicker(false)}>
+                  <Text style={[styles.saveButtonText, { color: palette.background }]}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+      {showJournalDatePicker && Platform.OS === 'android' && (
         <DateTimePicker
           value={journalDate || new Date()}
           mode="date"
-          display="default"
+          display="calendar"
           onChange={handleJournalDateChange}
         />
       )}
-      {showJournalTimePicker && (
+      {showJournalDatePicker && Platform.OS === 'ios' && (
+        <Modal transparent animationType="fade" onRequestClose={() => setShowJournalDatePicker(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.modalCard, { maxWidth: 360, backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+              <Text style={[styles.sectionTitle, { color: palette.text }]}>Sélectionner la date</Text>
+              <DateTimePicker
+                value={journalDate || new Date()}
+                mode="date"
+                display="spinner"
+                onChange={(_e, d) => { if (d) setJournalDate(d); }}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setShowJournalDatePicker(false)}>
+                  <Text style={[styles.cancelButtonText, { color: palette.text }]}>Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.tint, flex: 1 }]} onPress={() => setShowJournalDatePicker(false)}>
+                  <Text style={[styles.saveButtonText, { color: palette.background }]}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+      {showJournalTimePicker && Platform.OS === 'android' && (
         <DateTimePicker
           value={journalTime || new Date()}
           mode="time"
           is24Hour
-          display="default"
+          display="clock"
           onChange={handleJournalTimeChange}
         />
       )}
-
-      <Modal visible={isNotesModalVisible} transparent animationType="fade" onRequestClose={() => setIsNotesModalVisible(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={[styles.sectionTitle, { color: palette.text }]}>{editingEntryId ? 'Modifier une note' : 'Ajouter une note'}</Text>
-            {sortedJournalEntries.length > 0 && (
-              <View style={{ gap: 8 }}>
-                {sortedJournalEntries.map((entry) => (
-                  <View key={entry.id} style={[styles.activityItem, { borderColor: palette.border }]}>
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[styles.activityTitle, { color: palette.text }]}>{entry.title}</Text>
-                      <Text style={[styles.activityMeta, { color: palette.muted }]}>
-                        {formatDisplayDateTime(entry.date, entry.time)}
-                      </Text>
-                    </View>
-                    <View style={styles.activityActions}>
-                      <TouchableOpacity onPress={() => handleEditJournal(entry)} style={[styles.iconButton, { borderColor: palette.border }]}>
-                        <Ionicons name="pencil" size={16} color={palette.text} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDeleteJournal(entry.id)} style={[styles.iconButton, { borderColor: palette.border }]}>
-                        <Ionicons name="trash" size={16} color={palette.danger} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-            <TextInput
-              style={[styles.input, { borderColor: palette.border, color: palette.text }]}
-              placeholder="Titre"
-              placeholderTextColor={palette.muted}
-              value={notesForm.title}
-              onChangeText={(text) => setNotesForm((prev) => ({ ...prev, title: text }))}
-              editable={!isActionLoading}
-            />
-            <TouchableOpacity
-              style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
-              onPress={() => setShowJournalDatePicker(true)}
-              disabled={isActionLoading}>
-              <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatDateLabel(journalDate)}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
-              onPress={() => setShowJournalTimePicker(true)}
-              disabled={isActionLoading}>
-              <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatTimeLabel(journalTime)}</Text>
-            </TouchableOpacity>
-            <TextInput
-              multiline
-              style={[styles.notesInput, { borderColor: palette.border, color: palette.text, backgroundColor: palette.surface }]}
-              placeholder="Contenu"
-              placeholderTextColor={palette.muted}
-              value={notesForm.content}
-              onChangeText={(text) => setNotesForm((prev) => ({ ...prev, content: text }))}
-              editable={!isActionLoading}
-            />
-            <View style={styles.modalActions}>
-              {editingEntryId && (
-                <TouchableOpacity onPress={() => handleDeleteJournal(editingEntryId)} style={[styles.iconButton, { borderColor: palette.border }]}>
-                  <Ionicons name="trash" size={16} color={palette.danger} />
+      {showJournalTimePicker && Platform.OS === 'ios' && (
+        <Modal transparent animationType="fade" onRequestClose={() => setShowJournalTimePicker(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.modalCard, { maxWidth: 360, backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+              <Text style={[styles.sectionTitle, { color: palette.text }]}>Sélectionner l'heure</Text>
+              <DateTimePicker
+                value={journalTime || new Date()}
+                mode="time"
+                display="spinner"
+                is24Hour
+                onChange={(_e, d) => { if (d) setJournalTime(d); }}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={() => setShowJournalTimePicker(false)}>
+                  <Text style={[styles.cancelButtonText, { color: palette.text }]}>Annuler</Text>
                 </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: palette.tint, flex: 1 }]}
-                onPress={handleSaveNotes}
-                disabled={isActionLoading}>
-                <Text style={[styles.saveButtonText, { color: palette.background }]}>
-                  {isActionLoading ? t('general.loading') : 'Enregistrer'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setIsNotesModalVisible(false)} style={styles.cancelButton}>
-                <Text style={[styles.cancelButtonText, { color: palette.text }]}>Annuler</Text>
-              </TouchableOpacity>
+                <TouchableOpacity style={[styles.saveButton, { backgroundColor: palette.tint, flex: 1 }]} onPress={() => setShowJournalTimePicker(false)}>
+                  <Text style={[styles.saveButtonText, { color: palette.background }]}>OK</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
+
+      {/* Notes modal removed — journal form is rendered inline above */}
     </SafeAreaView>
   );
 }
@@ -787,7 +906,6 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 600,
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 16,
     gap: 10,

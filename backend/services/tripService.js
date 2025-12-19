@@ -396,7 +396,6 @@ export class TripService {
     if (trip.owner_id !== ownerId) return { error: "Only the owner can add journal entries", status: 403 };
 
     const { title, content, date, time } = payload || {};
-    if (!title || !title.trim()) return { error: "Title is required", status: 400 };
 
     const id = uuidv4();
     const createdAt = Date.now();
@@ -406,7 +405,7 @@ export class TripService {
     `).run({
       id,
       trip_id: tripId,
-      title: title.trim(),
+      title: title ? title.trim() : "",
       content: content || "",
       date: date || null,
       time: time || null,
@@ -414,7 +413,7 @@ export class TripService {
     });
 
     return {
-      entry: { id, title: title.trim(), content: content || "", date: date || null, time: time || null, created_at: createdAt },
+      entry: { id, title: title ? title.trim() : "", content: content || "", date: date || null, time: time || null, created_at: createdAt },
       status: 201
     };
   }
@@ -428,7 +427,6 @@ export class TripService {
     if (!entry) return { error: "Journal entry not found", status: 404 };
 
     const { title, content, date, time } = payload || {};
-    if (title !== undefined && !title.trim()) return { error: "Title is required", status: 400 };
 
     db.prepare(`
       UPDATE trip_journal_entries
@@ -440,7 +438,7 @@ export class TripService {
     `).run({
       id: entryId,
       trip_id: tripId,
-      title: title?.trim(),
+      title: title === undefined ? undefined : (title ? title.trim() : ""),
       content,
       date: date || null,
       time: time || null
