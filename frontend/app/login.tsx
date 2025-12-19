@@ -64,11 +64,11 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
           <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }, formWidth]}>
-            <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.glassStroke }]}>
-              <Ionicons name="arrow-back" size={24} color={palette.text} />
-            </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: palette.text }]}>{isLoginMode ? t('auth.loginTitle') : t('auth.registerTitle')}</Text>
           </LinearGradient>
           <View style={[styles.form, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, formWidth]}>
@@ -151,8 +151,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 24,
+    padding: 24,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     paddingHorizontal: 24,
@@ -163,20 +164,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   form: {
     padding: 24,
@@ -193,7 +187,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 12,
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 14,
     borderWidth: 1,
   },
   inputIcon: {
@@ -206,6 +200,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 16,
+    textAlign: 'center',
   },
   eyeButton: {
     padding: 4,
