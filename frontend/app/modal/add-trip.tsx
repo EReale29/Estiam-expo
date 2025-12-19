@@ -120,7 +120,21 @@ export default function AddTripModal() {
         showPermissionAlert('Permission Localisation refusée', t('addTrip.permissionLocation'));
         return;
       }
-      const position = await Location.getCurrentPositionAsync({});
+
+      let position = await Location.getLastKnownPositionAsync();
+      if (!position) {
+        position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          maximumAge: 10000,
+          timeout: 5000,
+        });
+      }
+
+      if (!position) {
+        Alert.alert('Erreur', t('addTrip.permissionLocation'));
+        return;
+      }
+
       const address = await Location.reverseGeocodeAsync(position.coords);
       if (address.length > 0) {
         const addr = address[0];
@@ -133,6 +147,7 @@ export default function AddTripModal() {
     } catch (error) {
       console.log('Error getting location: ', error);
       Alert.alert('Erreur', t('addTrip.permissionLocation'));
+      setLocation(undefined);
     }
   };
 
