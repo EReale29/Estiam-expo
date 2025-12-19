@@ -114,15 +114,14 @@ export default function AddTripModal() {
   };
 
   const getLocation = async () => {
-    if (!ensureDevice('Localisation')) return;
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         showPermissionAlert('Permission Localisation refusée', t('addTrip.permissionLocation'));
         return;
       }
-      const location = await Location.getCurrentPositionAsync({});
-      const address = await Location.reverseGeocodeAsync(location.coords);
+      const position = await Location.getCurrentPositionAsync({});
+      const address = await Location.reverseGeocodeAsync(position.coords);
       if (address.length > 0) {
         const addr = address[0];
         const city = addr.city || addr.name || '';
@@ -130,9 +129,10 @@ export default function AddTripModal() {
         const formattedAddress = `${city}${city && country ? ', ' : ''}${country}`.trim();
         setDestination(formattedAddress);
       }
-      setLocation({ lat: location.coords.latitude, lng: location.coords.longitude });
+      setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
     } catch (error) {
       console.log('Error getting location: ', error);
+      Alert.alert('Erreur', t('addTrip.permissionLocation'));
     }
   };
 
