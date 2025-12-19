@@ -88,7 +88,9 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.profileInfo}>
                 <View style={styles.nameRow}>
-                  <Text style={[styles.profileName, { color: palette.text }]}>{user?.name || 'TravelMate'}</Text>
+                  <Text style={[styles.profileName, { color: palette.text }]}>
+                    {user?.username || user?.name || 'TravelMate'}
+                  </Text>
                   <TouchableOpacity
                     style={[styles.inlineEdit, { borderColor: palette.border }]}
                     onPress={() => router.push('/modal/edit-profile')}>
