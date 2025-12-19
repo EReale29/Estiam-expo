@@ -252,7 +252,7 @@ export default function AddTripModal() {
       const { cover, photos } = await uploadImages();
       const resolvedLocation = location || (await geocodeDestination());
       if (!resolvedLocation) {
-        Alert.alert('Erreur', t('addTrip.destinationFormat'));
+        Alert.alert('Erreur', 'Ville, pays non reconnu');
         return;
       }
 
