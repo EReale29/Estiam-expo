@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -18,6 +18,9 @@ export default function NotificationScreen() {
   const isSimulator = !Device.isDevice;
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const { width } = useWindowDimensions();
+  const isWide = width > 900;
+  const layoutWidth = { width: '100%', maxWidth: isWide ? 1080 : undefined, alignSelf: 'center' };
 
   const {
     pushToken,
@@ -80,7 +83,7 @@ export default function NotificationScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
-      <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }]}>
+      <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }, layoutWidth]}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.glassStroke }]}>
             <Ionicons name="arrow-back" size={24} color={palette.text} />
@@ -90,7 +93,7 @@ export default function NotificationScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, layoutWidth]}>
         <View style={[styles.statusCard, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
           <View style={styles.statusRow}>
             <Ionicons
@@ -260,6 +263,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 24,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    gap: 16,
   },
   statusCard: {
     borderRadius: 16,

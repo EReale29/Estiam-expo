@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -56,6 +56,9 @@ export default function TripsScreen() {
   const { trips, view, setView, filter, setFilter, query, setQuery, isLoading, error, refresh } = useTrips();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const { width } = useWindowDimensions();
+  const isWide = width > 900;
+  const layoutWidth = { width: '100%', maxWidth: isWide ? 1100 : undefined, alignSelf: 'center' };
 
   useEffect(() => {
     if (params.view === 'map' || params.view === 'list') {
@@ -78,7 +81,13 @@ export default function TripsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
-      <View style={[styles.header, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow },
+          layoutWidth,
+          { marginTop: isWide ? 12 : 0 },
+        ]}>
         <Text style={[styles.headerTitle, { color: palette.text }]}>{t('trips.title')}</Text>
         <View style={styles.searchBarContainer}>
           <View style={[styles.searchBar, { backgroundColor: palette.surface, borderColor: palette.border }]}>
@@ -99,7 +108,7 @@ export default function TripsScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, layoutWidth]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer} contentContainerStyle={styles.tabsContent}>
           {filters.map((tab) => (
             <TouchableOpacity
@@ -234,6 +243,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 40,
+    gap: 12,
+  },
   tabContainer: {
     paddingHorizontal: 24,
     paddingVertical: 16,
@@ -254,6 +267,9 @@ const styles = StyleSheet.create({
   tripsList: {
     paddingHorizontal: 24,
     gap: 16,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 1100,
   },
   tripCard: {
     borderRadius: 24,
@@ -324,6 +340,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 1100,
   },
   map: {
     flex: 1,

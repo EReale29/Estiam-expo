@@ -1,22 +1,53 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useI18n } from '@/contexts/i18n-context';
 import { useOffline } from '@/hooks/use-offline';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/contexts/theme-context';
 
 export default function SettingsScreen() {
   const { language, setLanguage, t } = useI18n();
   const { isOnline, pendingCount, syncNow } = useOffline();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const { preference, setPreference } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width > 720;
+  const cardWidth = { width: '100%', maxWidth: isWide ? 720 : undefined, alignSelf: 'center' };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.title, { color: palette.text }]}>{t('tabs.settings')}</Text>
+        <Text style={[styles.title, { color: palette.text }, cardWidth]}>{t('tabs.settings')}</Text>
 
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, cardWidth]}>
+          <Text style={[styles.cardTitle, { color: palette.text }]}>{t('tabs.settings')} • Apparence</Text>
+          <View style={[styles.row, styles.chipRow]}>
+            {(['system', 'light', 'dark'] as const).map((mode) => (
+              <TouchableOpacity
+                key={mode}
+                style={[
+                  styles.chip,
+                  { borderColor: palette.border },
+                  preference === mode && { backgroundColor: palette.tint, borderColor: palette.tint, shadowColor: palette.shadow },
+                ]}
+                onPress={() => setPreference(mode)}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    { color: palette.text },
+                    preference === mode && { color: palette.background, fontWeight: '700' },
+                  ]}>
+                  {mode === 'system' ? 'System' : mode === 'light' ? 'Light' : 'Dark'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, cardWidth]}>
           <Text style={[styles.cardTitle, { color: palette.text }]}>{t('profile.changeLanguage')}</Text>
           <View style={styles.row}>
             <TouchableOpacity
@@ -58,7 +89,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, cardWidth]}>
           <Text style={[styles.cardTitle, { color: palette.text }]}>{t('general.offline')}</Text>
           <Text style={[styles.subtitle, { color: palette.muted }]}>{isOnline ? 'En ligne' : 'Hors ligne'}</Text>
           <Text style={[styles.subtitle, { color: palette.muted }]}>Actions en attente: {pendingCount}</Text>
@@ -99,6 +130,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 8,
+  },
+  chipRow: {
+    flexWrap: 'wrap',
   },
   chip: {
     paddingVertical: 8,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -21,6 +21,9 @@ export default function TripDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const { width } = useWindowDimensions();
+  const isWide = width > 880;
+  const layoutWidth = { width: '100%', maxWidth: isWide ? 1080 : undefined, alignSelf: 'center' };
 
   useEffect(() => {
     if (!id) return;
@@ -46,18 +49,23 @@ export default function TripDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
-      <TouchableOpacity style={[styles.backButton, { borderColor: palette.border }]} onPress={() => router.back()}>
+      <TouchableOpacity style={[styles.backButton, { borderColor: palette.border }, layoutWidth]} onPress={() => router.back()}>
         <Ionicons name="arrow-back" size={20} color={palette.text} />
         <Text style={[styles.backText, { color: palette.text }]}>{t('trips.openDetails')}</Text>
       </TouchableOpacity>
 
       {isLoading && <ActivityIndicator color={palette.tint} style={{ marginTop: 12 }} />}
-      {error && <Text style={[styles.error, { color: palette.danger }]}>{error}</Text>}
+      {error && <Text style={[styles.error, { color: palette.danger }, layoutWidth]}>{error}</Text>}
 
       {trip && (
         <ScrollView>
           <Image source={cover} style={styles.cover} contentFit="cover" />
-          <View style={[styles.content, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+          <View
+            style={[
+              styles.content,
+              { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow },
+              layoutWidth,
+            ]}>
             <Text style={[styles.title, { color: palette.text }]}>{trip.title}</Text>
             <View style={styles.row}>
               <Ionicons name="location-outline" size={18} color={palette.icon} />
@@ -112,6 +120,7 @@ const styles = StyleSheet.create({
     gap: 6,
     padding: 16,
     borderBottomWidth: 1,
+    alignSelf: 'center',
   },
   backText: {
     fontWeight: '600',
@@ -128,6 +137,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 24,

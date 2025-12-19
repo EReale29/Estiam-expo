@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +17,9 @@ export default function LoginScreen() {
   const { t } = useI18n();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const { width } = useWindowDimensions();
+  const isWide = width > 720;
+  const formWidth = { width: '100%', maxWidth: isWide ? 520 : undefined, alignSelf: 'center' };
 
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
@@ -62,13 +65,13 @@ export default function LoginScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }]}>
+          <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }, formWidth]}>
             <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.glassStroke }]}>
               <Ionicons name="arrow-back" size={24} color={palette.text} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: palette.text }]}>{isLoginMode ? t('auth.loginTitle') : t('auth.registerTitle')}</Text>
           </LinearGradient>
-          <View style={[styles.form, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]}>
+          <View style={[styles.form, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, formWidth]}>
             {!isLoginMode && (
               <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
                 <Ionicons name="person-outline" size={24} color={palette.icon} style={styles.inputIcon} />
@@ -148,6 +151,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 24,
+    alignItems: 'center',
   },
   header: {
     paddingHorizontal: 24,

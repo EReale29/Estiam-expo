@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -19,6 +19,9 @@ export default function ProfileScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const { width } = useWindowDimensions();
+  const isWide = width > 900;
+  const layoutWidth = { width: '100%', maxWidth: isWide ? 1100 : undefined, alignSelf: 'center' };
 
   const stats = [
     { label: t('profile.statsTrips'), value: data?.stats.trips ?? 0, icon: 'map-outline' as const, colors: palette.heroGradient as const },
@@ -40,7 +43,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }]}>
+        <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }, layoutWidth]}>
           <Text style={[styles.headerTitle, { color: palette.text }]}>{t('profile.title')}</Text>
           <View style={[styles.profileCard, { borderColor: palette.border, shadowColor: palette.shadow }]}>
             <View style={styles.profileHeader}>
@@ -70,7 +73,7 @@ export default function ProfileScreen() {
           </View>
         </LinearGradient>
 
-        <View style={[styles.content, { backgroundColor: palette.background }]}>
+        <View style={[styles.content, { backgroundColor: palette.background }, layoutWidth]}>
           <TouchableOpacity style={[styles.menuItem, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }]} onPress={toggleLanguage}>
             <LinearGradient colors={palette.actionGradient} style={styles.menuItemIcon}>
               <Ionicons name="language-outline" size={24} color="white" />

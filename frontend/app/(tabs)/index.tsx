@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -33,6 +33,9 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
+  const layoutWidth = { width: '100%', maxWidth: isWide ? 1100 : undefined, alignSelf: 'center' };
 
   const stats = useMemo(
     () => [
@@ -48,8 +51,10 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
-      <ScrollView>
-        <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <LinearGradient
+          colors={palette.heroGradient}
+          style={[styles.header, layoutWidth, { shadowColor: palette.shadow, marginHorizontal: isWide ? 16 : 0 }]}>
           <View style={[styles.headerTop, { borderColor: palette.glassStroke }]}>
             <View>
               <Text style={[styles.greetingText, { color: palette.muted }]}>{t('home.greeting')}</Text>
@@ -78,7 +83,7 @@ export default function HomeScreen() {
           </View>
         </LinearGradient>
 
-        <View style={[styles.homeContent, { backgroundColor: palette.background }]}>
+        <View style={[styles.homeContent, { backgroundColor: palette.background }, layoutWidth]}>
           <View style={[styles.section, { borderColor: palette.border }]}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text }]}>{t('home.upcoming')}</Text>
@@ -125,7 +130,7 @@ export default function HomeScreen() {
           <Text style={{ ...styles.sectionTitle, paddingHorizontal: 12, color: palette.text }}>
             {t('home.quickActions')}
           </Text>
-          <View style={styles.quickActionsGrid}>
+          <View style={[styles.quickActionsGrid, isWide && styles.quickActionsGridWide]}>
             <TouchableOpacity onPress={() => router.push('/modal/add-trip')}>
               <LinearGradient colors={palette.actionGradient} style={[styles.quickActionCard, { shadowColor: palette.shadow }]}>
                 <Ionicons name="add-circle-outline" size={24} color="#fff" />
@@ -182,6 +187,10 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
+    gap: 12,
   },
   header: {
     paddingHorizontal: 24,
@@ -275,6 +284,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
+    alignSelf: 'center',
+    width: '92%',
+    maxWidth: 1000,
   },
   tripImage: {
     width: 80,
@@ -318,12 +330,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 12,
   },
+  quickActionsGridWide: {
+    gap: 16,
+    justifyContent: 'flex-start',
+  },
   quickActionCard: {
     width: 110,
     height: 110,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
   },
   quickActionLabel: {
     color: '#fff',
