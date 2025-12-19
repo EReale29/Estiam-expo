@@ -154,7 +154,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
+        <View style={[styles.section, styles.activitySection, { borderColor: palette.border }]}>
           <View style={{ paddingHorizontal: 12 }}>
             <Text style={{ ...styles.sectionTitle, paddingHorizontal: 12, color: palette.text }}>
               {t('home.recentActivity')}
@@ -260,9 +260,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   quickActionsSection: {
-    borderBottomWidth: 0,
-    borderTopWidth: 1,
-    paddingTop: 12,
+    borderTopWidth: 0,
+    borderBottomWidth: 1,
+    paddingBottom: 12,
+  },
+  activitySection: {
+    borderBottomWidth: 1,
+    paddingBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
