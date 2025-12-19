@@ -333,7 +333,13 @@ export default function AddTripModal() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: palette.background, paddingTop: insets.top + 12 }]}
       edges={['bottom']}>
-      <Text style={styles.title}>{t('addTrip.title')}</Text>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.border }]}>
+          <Ionicons name="arrow-back" size={20} color={palette.text} />
+        </TouchableOpacity>
+        <Text style={styles.title}>{t('addTrip.title')}</Text>
+        <View style={{ width: 40 }} />
+      </View>
       <ScrollView>
         <View style={styles.section}>
           <Text style={styles.label}>{t('addTrip.cover')}</Text>
@@ -538,13 +544,27 @@ const createStyles = (palette: typeof Colors.light) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: 20,
+      paddingHorizontal: 20,
       backgroundColor: palette.background,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     title: {
       fontSize: 24,
       fontWeight: 'bold',
-      marginBottom: 20,
+      marginBottom: 8,
       color: palette.text,
     },
     section: {
