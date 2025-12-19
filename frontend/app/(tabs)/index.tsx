@@ -131,6 +131,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text }]}>{t('home.quickActions')}</Text>
             </View>
+            <View style={[styles.sectionDivider, { borderColor: palette.border }]} />
             <View style={[styles.quickActionsGrid, isWide && styles.quickActionsGridWide]}>
               <TouchableOpacity onPress={() => router.push('/modal/add-trip')}>
                 <LinearGradient colors={palette.actionGradient} style={[styles.quickActionCard, { shadowColor: palette.shadow }]}>
@@ -161,6 +162,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: palette.text }]}>{t('home.recentActivity')}</Text>
             </View>
+            <View style={[styles.sectionDivider, { borderColor: palette.border }]} />
             {activities.length === 0 && !isLoading ? (
               <Text style={[styles.activityEmpty, { color: palette.muted }]}>{t('general.loading')}</Text>
             ) : (
@@ -262,12 +264,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   quickActionsSection: {
-    borderBottomWidth: 1,
+    borderBottomWidth: 0,
     paddingBottom: 12,
   },
   activitySection: {
-    borderBottomWidth: 1,
+    borderBottomWidth: 0,
     paddingBottom: 12,
+  },
+  sectionDivider: {
+    borderBottomWidth: 1,
+    marginHorizontal: 12,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
