@@ -85,11 +85,21 @@ export default function ProfileScreen() {
           </View>
           <View style={[styles.profileCard, { borderColor: palette.border, shadowColor: palette.shadow }]}>
             <View style={styles.profileHeader}>
-              <View style={[styles.avatar, { backgroundColor: palette.glass, borderColor: palette.glassStroke }]}>
-                {avatar ? <Image source={{ uri: avatar }} style={styles.avatarBg} /> : <Text style={styles.avatarEmoji}>🧭</Text>}
+              <View style={[styles.avatarContainer, { borderColor: palette.glassStroke }]}>
+                <View style={[styles.avatar, { backgroundColor: palette.glass, borderColor: palette.glassStroke }]}>
+                  {avatar ? <Image source={{ uri: avatar }} style={styles.avatarBg} /> : <Text style={styles.avatarEmoji}>🧭</Text>}
+                </View>
+                <TouchableOpacity style={[styles.avatarEdit, { backgroundColor: palette.tint }]} onPress={pickAvatar}>
+                  <Ionicons name="pencil" size={14} color={palette.background} />
+                </TouchableOpacity>
               </View>
               <View style={styles.profileInfo}>
-                <Text style={[styles.profileName, { color: palette.text }]}>{user?.name || 'TravelMate'}</Text>
+                <View style={styles.nameRow}>
+                  <Text style={[styles.profileName, { color: palette.text }]}>{user?.name || 'TravelMate'}</Text>
+                  <TouchableOpacity style={[styles.inlineEdit, { borderColor: palette.border }]} onPress={() => undefined}>
+                    <Ionicons name="pencil" size={14} color={palette.text} />
+                  </TouchableOpacity>
+                </View>
                 <Text style={[styles.profileEmail, { color: palette.muted }]}>{user?.email}</Text>
               </View>
             </View>
@@ -114,13 +124,6 @@ export default function ProfileScreen() {
         <View style={[styles.content, { backgroundColor: palette.background }, layoutWidth]}>
           <View style={[styles.formCard, { borderColor: palette.border, backgroundColor: palette.card, shadowColor: palette.shadow }]}>
             <Text style={[styles.formTitle, { color: palette.text }]}>{t('profile.edit')}</Text>
-            <TouchableOpacity style={[styles.menuItem, { backgroundColor: palette.surface, borderColor: palette.border }]} onPress={pickAvatar}>
-              <Ionicons name="image-outline" size={20} color={palette.icon} />
-              <Text style={[styles.menuItemTitle, { color: palette.text }]}>{t('profile.avatar')}</Text>
-              <Text style={[styles.menuItemSubTitle, { color: palette.muted }]} numberOfLines={1}>
-                {avatar ? 'URL • ' + avatar.slice(0, 24) + '...' : t('home.addPhoto')}
-              </Text>
-            </TouchableOpacity>
 
             <Text style={[styles.label, { color: palette.muted }]}>{t('profile.username')}</Text>
             <TextInput
@@ -204,6 +207,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 16,
   },
+  avatarContainer: {
+    position: 'relative',
+    width: 90,
+    height: 90,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 45,
+    borderWidth: 1,
+  },
   avatar: {
     width: 80,
     height: 80,
@@ -226,8 +238,23 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: '#fff',
   },
+  avatarEdit: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   profileInfo: {
     flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   profileName: {
     fontSize: 24,
@@ -279,6 +306,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 4,
+  },
+  inlineEdit: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   menuItem: {
     borderRadius: 16,
