@@ -43,7 +43,11 @@ export default function EditProfileModal() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['bottom']}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { borderColor: palette.border }]}>
+          <Ionicons name="arrow-back" size={18} color={palette.text} />
+        </TouchableOpacity>
         <Text style={[styles.title, { color: palette.text }]}>{t('profile.edit')}</Text>
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={[styles.formCard, { borderColor: palette.border, backgroundColor: palette.card, shadowColor: palette.shadow }]}>
@@ -77,6 +81,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 20,
