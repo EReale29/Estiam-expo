@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -9,6 +9,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { API } from '@/services/api';
 import { Trip } from '@/types/models';
 import { useI18n } from '@/contexts/i18n-context';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,6 +19,11 @@ export default function TripDetailScreen() {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const colorScheme = useColorScheme();
+  const palette = Colors[colorScheme ?? 'light'];
+  const { width } = useWindowDimensions();
+  const isWide = width > 880;
+  const layoutWidth = { width: '100%', maxWidth: isWide ? 1080 : undefined, alignSelf: 'center' };
 
   useEffect(() => {
     if (!id) return;
@@ -41,31 +48,36 @@ export default function TripDetailScreen() {
     require('@/assets/images/paris.jpeg');
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={20} color="#111827" />
-        <Text style={styles.backText}>{t('trips.openDetails')}</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: palette.background }]} edges={['top']}>
+      <TouchableOpacity style={[styles.backButton, { borderColor: palette.border }, layoutWidth]} onPress={() => router.back()}>
+        <Ionicons name="arrow-back" size={20} color={palette.text} />
+        <Text style={[styles.backText, { color: palette.text }]}>{t('trips.openDetails')}</Text>
       </TouchableOpacity>
 
-      {isLoading && <ActivityIndicator color="#a855f7" style={{ marginTop: 12 }} />}
-      {error && <Text style={styles.error}>{error}</Text>}
+      {isLoading && <ActivityIndicator color={palette.tint} style={{ marginTop: 12 }} />}
+      {error && <Text style={[styles.error, { color: palette.danger }, layoutWidth]}>{error}</Text>}
 
       {trip && (
         <ScrollView>
           <Image source={cover} style={styles.cover} contentFit="cover" />
-          <View style={styles.content}>
-            <Text style={styles.title}>{trip.title}</Text>
+          <View
+            style={[
+              styles.content,
+              { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow },
+              layoutWidth,
+            ]}>
+            <Text style={[styles.title, { color: palette.text }]}>{trip.title}</Text>
             <View style={styles.row}>
-              <Ionicons name="location-outline" size={18} color="#6b7280" />
-              <Text style={styles.subtitle}>{trip.destination}</Text>
+              <Ionicons name="location-outline" size={18} color={palette.icon} />
+              <Text style={[styles.subtitle, { color: palette.muted }]}>{trip.destination}</Text>
             </View>
             <View style={styles.row}>
-              <Ionicons name="calendar-outline" size={18} color="#6b7280" />
-              <Text style={styles.subtitle}>
+              <Ionicons name="calendar-outline" size={18} color={palette.icon} />
+              <Text style={[styles.subtitle, { color: palette.muted }]}>
                 {trip.startDate} - {trip.endDate}
               </Text>
             </View>
-            {!!trip.description && <Text style={styles.description}>{trip.description}</Text>}
+            {!!trip.description && <Text style={[styles.description, { color: palette.text }]}>{trip.description}</Text>}
 
             {trip.location && trip.location.lat !== 0 && trip.location.lng !== 0 && (
               <View style={styles.mapContainer}>
@@ -88,7 +100,7 @@ export default function TripDetailScreen() {
 
             <View style={styles.photosContainer}>
               {trip.photos?.map((photo) => (
-                <Image key={photo} source={{ uri: photo }} style={styles.photo} contentFit="cover" />
+                <Image key={photo} source={{ uri: photo }} style={[styles.photo, { borderColor: palette.border }]} contentFit="cover" />
               ))}
             </View>
           </View>
@@ -101,16 +113,16 @@ export default function TripDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     padding: 16,
+    borderBottomWidth: 1,
+    alignSelf: 'center',
   },
   backText: {
-    color: '#111827',
     fontWeight: '600',
   },
   cover: {
@@ -119,11 +131,17 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    margin: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
     marginBottom: 8,
   },
   row: {
@@ -133,11 +151,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitle: {
-    color: '#6b7280',
   },
   description: {
     marginTop: 12,
-    color: '#111827',
     lineHeight: 20,
   },
   mapContainer: {
@@ -160,9 +176,9 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 12,
     backgroundColor: '#e5e7eb',
+    borderWidth: 1,
   },
   error: {
-    color: '#b91c1c',
     paddingHorizontal: 16,
   },
 });
