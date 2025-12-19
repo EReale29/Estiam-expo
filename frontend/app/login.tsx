@@ -71,70 +71,72 @@ export default function LoginScreen() {
           <LinearGradient colors={palette.heroGradient} style={[styles.header, { shadowColor: palette.shadow }, formWidth]}>
             <Text style={[styles.headerTitle, { color: palette.text }]}>{t('auth.loginTitle')}</Text>
           </LinearGradient>
-          <View style={[styles.form, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, formWidth]}>
-            {!isLoginMode && (
+          <View style={styles.formWrapper}>
+            <View style={[styles.form, { backgroundColor: palette.card, borderColor: palette.border, shadowColor: palette.shadow }, formWidth]}>
+              {!isLoginMode && (
+                <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+                  <Ionicons name="person-outline" size={24} color={palette.icon} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: palette.text }]}
+                    placeholder={t('auth.username')}
+                    placeholderTextColor={palette.muted}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    editable={!isLoading}
+                  />
+                </View>
+              )}
+
               <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-                <Ionicons name="person-outline" size={24} color={palette.icon} style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={24} color={palette.icon} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { color: palette.text }]}
-                  placeholder={t('auth.username')}
+                  placeholder={t('auth.email')}
                   placeholderTextColor={palette.muted}
-                  value={username}
-                  onChangeText={setUsername}
+                  value={email}
+                  keyboardType="email-address"
+                  onChangeText={setEmail}
                   autoCapitalize="none"
                   editable={!isLoading}
                 />
               </View>
-            )}
 
-            <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-              <Ionicons name="mail-outline" size={24} color={palette.icon} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: palette.text }]}
-                placeholder={t('auth.email')}
-                placeholderTextColor={palette.muted}
-                value={email}
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
-            </View>
+              <View>
+                <Ionicons name="lock-closed-outline" size={24} color={palette.icon} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { backgroundColor: palette.surface, borderColor: palette.border, color: palette.text }]}
+                  placeholder={t('auth.password')}
+                  placeholderTextColor={palette.muted}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoComplete="password"
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
 
-            <View>
-              <Ionicons name="lock-closed-outline" size={24} color={palette.icon} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { backgroundColor: palette.surface, borderColor: palette.border, color: palette.text }]}
-                placeholder={t('auth.password')}
-                placeholderTextColor={palette.muted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoComplete="password"
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={[styles.eyeButton, { backgroundColor: palette.tint }]}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={24} color={palette.background} />
+                </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={[styles.eyeButton, { backgroundColor: palette.tint }]}>
-                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={24} color={palette.background} />
+              <TouchableOpacity onPress={handleSubmit} style={[styles.submitButton, isLoading && styles.submitButtonDisabled]} disabled={isLoading}>
+                <LinearGradient colors={palette.actionGradient} style={styles.submitButtonGradient}>
+                  <Text style={[styles.submitButtonText, { color: palette.text }]}>{isLoading ? t('general.loading') : isLoginMode ? t('auth.loginCta') : t('auth.registerCta')}</Text>
+                </LinearGradient>
               </TouchableOpacity>
-            </View>
 
-            <TouchableOpacity onPress={handleSubmit} style={[styles.submitButton, isLoading && styles.submitButtonDisabled]} disabled={isLoading}>
-              <LinearGradient colors={palette.actionGradient} style={styles.submitButtonGradient}>
-                <Text style={[styles.submitButtonText, { color: palette.text }]}>{isLoading ? t('general.loading') : isLoginMode ? t('auth.loginCta') : t('auth.registerCta')}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setIsLoginMode(!isLoginMode)} style={styles.switchModeButton} disabled={isLoading}>
-              <Text style={[styles.switchModeText, { color: palette.tint }]}>{isLoginMode ? t('auth.switchToRegister') : t('auth.switchToLogin')}</Text>
-            </TouchableOpacity>
-
-            {isLoginMode && (
-              <TouchableOpacity style={styles.forgotPasswordButton}>
-                <Text style={[styles.forgotPasswordText, { color: palette.muted }]}>{t('auth.forgot')}</Text>
+              <TouchableOpacity onPress={() => setIsLoginMode(!isLoginMode)} style={styles.switchModeButton} disabled={isLoading}>
+                <Text style={[styles.switchModeText, { color: palette.tint }]}>{isLoginMode ? t('auth.switchToRegister') : t('auth.switchToLogin')}</Text>
               </TouchableOpacity>
-            )}
+
+              {isLoginMode && (
+                <TouchableOpacity style={styles.forgotPasswordButton}>
+                  <Text style={[styles.forgotPasswordText, { color: palette.muted }]}>{t('auth.forgot')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -153,7 +155,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   header: {
     paddingHorizontal: 24,
@@ -171,6 +173,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
     textAlign: 'center',
+  },
+  formWrapper: {
+    flexGrow: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   form: {
     padding: 16,
