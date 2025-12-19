@@ -102,10 +102,10 @@ export default function LoginScreen() {
                 />
               </View>
 
-              <View>
+              <View style={[styles.inputContainer, { backgroundColor: palette.surface, borderColor: palette.border }]}>
                 <Ionicons name="lock-closed-outline" size={24} color={palette.icon} style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, { backgroundColor: palette.surface, borderColor: palette.border, color: palette.text }]}
+                  style={[styles.input, styles.passwordInput, { color: palette.text }]}
                   placeholder={t('auth.password')}
                   placeholderTextColor={palette.muted}
                   value={password}
@@ -208,6 +208,9 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     paddingHorizontal: 12,
     textAlign: 'center',
+  },
+  passwordInput: {
+    paddingRight: 44,
   },
   eyeButton: {
     padding: 4,
