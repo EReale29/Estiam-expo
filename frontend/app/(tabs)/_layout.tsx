@@ -63,6 +63,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="photo.on.rectangle.angled" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null,
+          title: t('tabs.settings'),
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
