@@ -18,6 +18,9 @@ export interface Trip {
   photos: string[];
   photosCount?: number;
   location?: LocationPoint;
+  liked?: boolean;
+  likesCount?: number;
+  commentsCount?: number;
 }
 
 export interface DashboardStats {

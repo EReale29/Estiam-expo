@@ -3,7 +3,7 @@ import { API } from '@/services/api';
 import { Trip } from '@/types/models';
 import { events } from '@/services/events';
 
-export type TripFilter = 'all' | 'upcoming' | 'past' | 'ongoing';
+export type TripFilter = 'all' | 'upcoming' | 'past' | 'ongoing' | 'favorites';
 export type TripView = 'list' | 'map';
 
 const isUpcoming = (trip: Trip) => {
@@ -67,6 +67,7 @@ export const useTrips = () => {
       if (filter === 'upcoming') return isUpcoming(trip);
       if (filter === 'past') return isPast(trip);
       if (filter === 'ongoing') return isOngoing(trip);
+      if (filter === 'favorites') return !!trip.liked;
       return true;
     });
   }, [trips, query, filter]);

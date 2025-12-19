@@ -68,6 +68,7 @@ const translations: Record<Language, TranslationValue> = {
       mapView: 'Carte',
       empty: 'Aucun voyage',
       openDetails: 'Ouvrir le détail',
+      editTrip: 'Éditer le voyage',
     },
     profile: {
       title: 'Profil',
@@ -203,6 +204,7 @@ const translations: Record<Language, TranslationValue> = {
       mapView: 'Map',
       empty: 'No trip yet',
       openDetails: 'Open details',
+      editTrip: 'Edit trip',
     },
     profile: {
       title: 'Profile',

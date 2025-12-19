@@ -77,6 +77,7 @@ export default function TripsScreen() {
       { label: t('trips.filters.all'), value: 'all' },
       { label: t('trips.filters.upcoming'), value: 'upcoming' },
       { label: t('trips.filters.ongoing'), value: 'ongoing' },
+      { label: t('trips.filters.favorites'), value: 'favorites' },
       { label: t('trips.filters.past'), value: 'past' },
     ],
     [t]

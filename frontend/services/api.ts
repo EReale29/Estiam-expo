@@ -107,6 +107,17 @@ export const API = {
     return updated;
   },
 
+  async deleteTrip(id: string): Promise<void> {
+    await http.request(`/trips/${id}`, { method: 'DELETE' });
+    events.emitTripsChanged();
+  },
+
+  async toggleLike(id: string): Promise<{ liked: boolean; likesCount: number }> {
+    const res = await http.request<{ liked: boolean; likesCount: number }>(`/trips/${id}/like`, { method: 'POST' });
+    events.emitTripsChanged();
+    return res;
+  },
+
   async getDashboard(): Promise<DashboardResponse> {
     return http.request<DashboardResponse>('/dashboard');
   },
