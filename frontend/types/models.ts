@@ -26,7 +26,9 @@ export interface Trip {
 export interface DashboardStats {
   trips: number;
   photos: number;
+  likes: number;
   countries: number;
+  comments: number;
 }
 
 export interface DashboardActivity {

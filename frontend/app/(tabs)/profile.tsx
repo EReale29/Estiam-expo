@@ -36,7 +36,7 @@ export default function ProfileScreen() {
   const stats = [
     { label: t('profile.statsTrips'), value: data?.stats.trips ?? 0, icon: 'map-outline' as const, colors: palette.heroGradient as const },
     { label: t('profile.statsPhotos'), value: data?.stats.photos ?? 0, icon: 'camera' as const, colors: palette.actionGradient as const },
-    { label: t('profile.statsFavorites'), value: 0, icon: 'heart-outline' as const, colors: palette.deepGradient as const },
+    { label: t('profile.statsFavorites'), value: data?.stats.likes ?? 0, icon: 'heart-outline' as const, colors: palette.deepGradient as const },
   ];
 
   const pickAvatar = async () => {
