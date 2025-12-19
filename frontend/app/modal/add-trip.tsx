@@ -202,18 +202,25 @@ export default function AddTripModal() {
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(query)}`;
         const response = await fetch(url, {
           headers: { 'User-Agent': 'TravelMateApp/1.0 (expo)' },
         });
         if (!response.ok) return;
-        const data = (await response.json()) as Array<{ display_name: string; lat: string; lon: string }>;
+        const data = (await response.json()) as Array<{ display_name: string; lat: string; lon: string; address?: { city?: string; town?: string; village?: string; country?: string } }>;
         setSuggestions(
-          data.map((item) => ({
-            label: item.display_name,
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon),
-          }))
+          data
+            .map((item) => {
+              const city = item.address?.city || item.address?.town || item.address?.village;
+              const country = item.address?.country;
+              const label = city && country ? `${city}, ${country}` : item.display_name;
+              return {
+                label,
+                lat: parseFloat(item.lat),
+                lng: parseFloat(item.lon),
+              };
+            })
+            .filter((s) => s.label.includes(','))
         );
       } catch {
         setSuggestions([]);
