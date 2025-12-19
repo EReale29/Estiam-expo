@@ -89,7 +89,7 @@ export default function ProfileScreen() {
               <View style={styles.profileInfo}>
                 <View style={styles.nameRow}>
                   <Text style={[styles.profileName, { color: palette.text }]}>
-                    {user?.username || user?.name || 'TravelMate'}
+                    {user?.username || 'TravelMate'}
                   </Text>
                   <TouchableOpacity
                     style={[styles.inlineEdit, { borderColor: palette.border }]}
