@@ -53,12 +53,12 @@ export default function EditProfileModal() {
       </View>
 
       <View style={[styles.formCard, { borderColor: palette.border, backgroundColor: palette.card, shadowColor: palette.shadow }]}>
-        <Text style={[styles.label, { color: palette.muted }]}>{t('auth.username')}</Text>
+        <Text style={[styles.label, { color: palette.muted }]}>{t('profile.nameLabel')}</Text>
         <TextInput
           style={[styles.input, { borderColor: palette.border, color: palette.text }]}
           value={name}
           onChangeText={setName}
-          placeholder={t('auth.username')}
+          placeholder={t('profile.nameLabel')}
           placeholderTextColor={palette.muted}
         />
 

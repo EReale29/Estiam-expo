@@ -255,8 +255,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   content: {
-    padding: 24,
-    marginTop: -80,
+    padding: 0,
+    marginTop: 0,
   },
   formCard: {
     borderRadius: 16,
