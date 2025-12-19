@@ -1,0 +1,53 @@
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, Platform } from 'react-native';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { Design } from '@/constants/design';
+
+type ButtonProps = {
+  title: string;
+  variant?: 'primary' | 'ghost' | 'secondary';
+  onPress?: () => void;
+  style?: ViewStyle;
+  disabled?: boolean;
+}
+
+export const Button = ({ title, variant = 'primary', onPress, style, disabled }: ButtonProps) => {
+  const primary = useThemeColor({}, 'primary');
+  const tint = useThemeColor({}, 'tint');
+  const textColor = Platform.OS === 'web' ? (variant === 'primary' ? 'var(--primary-foreground)' : 'var(--primary)') : (variant === 'primary' ? '#fff' : primary);
+  const bg = Platform.OS === 'web' ? (variant === 'primary' ? 'var(--primary)' : 'transparent') : (variant === 'primary' ? primary : 'transparent');
+
+  const webStyle: any = Platform.OS === 'web' ? {
+    backgroundColor: variant === 'primary' ? 'var(--primary)' : 'transparent',
+    borderColor: variant === 'ghost' ? 'transparent' : 'var(--border)',
+  } : { backgroundColor: bg };
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={[styles.btn, webStyle, style, disabled && styles.disabled]}
+      disabled={disabled}
+    >
+      <Text style={[styles.text, { color: Platform.OS === 'web' ? (variant === 'primary' ? 'var(--primary-foreground)' : 'var(--primary)') : textColor }]}>{title}</Text>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  btn: {
+    paddingVertical: Design.spacing.sm,
+    paddingHorizontal: Design.spacing.lg,
+    borderRadius: Design.radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    fontWeight: '700'
+  },
+  disabled: {
+    opacity: 0.6
+  }
+})
+
+export default Button;

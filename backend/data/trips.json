@@ -1,0 +1,134 @@
+[
+  {
+    "id": "1",
+    "title": "Aventure à Bali",
+    "destination": "Bali, Indonésie",
+    "startDate": "2024-08-15",
+    "endDate": "2024-08-30",
+    "image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800",
+    "description": "Exploration des temples et plages paradisiaques",
+    "photos": [
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400",
+      "https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=400",
+      "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=400"
+    ],
+    "location": {
+      "lat": -8.3405,
+      "lng": 115.092
+    }
+  },
+  {
+    "id": "2",
+    "title": "Paris Romantique",
+    "destination": "Paris, France",
+    "startDate": "2024-12-15",
+    "endDate": "2024-12-20",
+    "image": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800",
+    "description": "Week-end romantique à la ville lumière",
+    "photos": [
+      "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400",
+      "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?w=400"
+    ],
+    "location": {
+      "lat": 48.8566,
+      "lng": 2.3522
+    }
+  },
+  {
+    "id": "58127f88-f09b-44e5-9241-56c8947f0309",
+    "title": "Voyage Marseille",
+    "destination": "Marseille, France",
+    "startDate": "",
+    "endDate": "09/12/2025",
+    "image": "http://localhost:4000/uploads/1765281636765-1520b106-cdd9-494f-9c0f-69eb882b9117.jpeg",
+    "description": "Test",
+    "photos": [
+      "http://localhost:4000/uploads/1765281636765-1520b106-cdd9-494f-9c0f-69eb882b9117.jpeg",
+      "http://localhost:4000/uploads/1765281636819-ea097dac-d318-44fa-bd88-0a6687b821f2.heic"
+    ],
+    "location": {
+      "lat": 0,
+      "lng": 0
+    }
+  },
+  {
+    "id": "d85be0ba-c246-4ffe-84a6-6adf7ad5ea30",
+    "title": "Second trip - Paris",
+    "destination": "Paris, France",
+    "startDate": "",
+    "endDate": "09/12/2025",
+    "image": "",
+    "description": "Mon deuxième voyage en France",
+    "photos": [
+      "file:///Users/o.hema/Library/Developer/CoreSimulator/Devices/505ECBF2-23DC-41A0-A846-59C7185073E0/data/Containers/Data/Application/63BEDD56-9EAE-4AD5-A5B8-F897F0461B93/Library/Caches/ExponentExperienceData/@anonymous/MyFirstApp-c93152af-9e6d-411f-978f-37ed9de9c037/ImagePicker/96022B75-833D-4C0F-9076-9503D1FE1683.jpeg",
+      "file:///Users/o.hema/Library/Developer/CoreSimulator/Devices/505ECBF2-23DC-41A0-A846-59C7185073E0/data/Containers/Data/Application/63BEDD56-9EAE-4AD5-A5B8-F897F0461B93/Library/Caches/ExponentExperienceData/@anonymous/MyFirstApp-c93152af-9e6d-411f-978f-37ed9de9c037/ImagePicker/C0A8D6D6-9570-4A87-9D36-182392BA52E0.jpeg",
+      "file:///Users/o.hema/Library/Developer/CoreSimulator/Devices/505ECBF2-23DC-41A0-A846-59C7185073E0/data/Containers/Data/Application/63BEDD56-9EAE-4AD5-A5B8-F897F0461B93/Library/Caches/ExponentExperienceData/@anonymous/MyFirstApp-c93152af-9e6d-411f-978f-37ed9de9c037/ImagePicker/279F14DA-757D-41A0-97B1-0E3F51828DB7.jpeg"
+    ],
+    "location": {
+      "lat": 0,
+      "lng": 0
+    }
+  },
+  {
+    "id": "15e36922-2545-4ef9-aed5-496b4625057c",
+    "title": "Test Hors ligne",
+    "destination": "Paris, France",
+    "startDate": "",
+    "endDate": "10/12/2025",
+    "image": "",
+    "description": "Test hors ligne",
+    "photos": [
+      "file:///Users/o.hema/Library/Developer/CoreSimulator/Devices/505ECBF2-23DC-41A0-A846-59C7185073E0/data/Containers/Data/Application/63BEDD56-9EAE-4AD5-A5B8-F897F0461B93/Library/Caches/ExponentExperienceData/@anonymous/MyFirstApp-c93152af-9e6d-411f-978f-37ed9de9c037/ImagePicker/CD855673-8D87-4AB5-ADE9-2F890C2E8E3F.jpeg"
+    ],
+    "location": {
+      "lat": 0,
+      "lng": 0
+    }
+  },
+  {
+    "id": "4ffca991-57c8-4b54-8960-a59c58449f7d",
+    "title": "Test - Offline",
+    "destination": "Paris, France",
+    "startDate": "",
+    "endDate": "10/12/2025",
+    "image": "",
+    "description": "Test",
+    "photos": [
+      "file:///Users/o.hema/Library/Developer/CoreSimulator/Devices/505ECBF2-23DC-41A0-A846-59C7185073E0/data/Containers/Data/Application/63BEDD56-9EAE-4AD5-A5B8-F897F0461B93/Library/Caches/ExponentExperienceData/@anonymous/MyFirstApp-c93152af-9e6d-411f-978f-37ed9de9c037/ImagePicker/31D02E71-6719-436A-82B7-057ED58259FC.jpeg"
+    ],
+    "location": {
+      "lat": 0,
+      "lng": 0
+    }
+  },
+  {
+    "id": "224a252b-c9bb-4faa-b2ca-0e199cc6b01f",
+    "title": "TEST MODE HORS LIGNE",
+    "destination": "Paris, France",
+    "startDate": "",
+    "endDate": "10/12/2025",
+    "image": "",
+    "description": "Ceci est un test",
+    "photos": [],
+    "location": {
+      "lat": 0,
+      "lng": 0
+    }
+  },
+  {
+    "id": "ff1161bf-c9ad-43ca-afff-40c4ed318339",
+    "title": "Trip to Tokyo",
+    "destination": "Tokyo, Japon",
+    "startDate": "",
+    "endDate": "10/12/2025",
+    "image": "",
+    "description": "Trip to Tokyo",
+    "photos": [
+      "file:///Users/o.hema/Library/Developer/CoreSimulator/Devices/505ECBF2-23DC-41A0-A846-59C7185073E0/data/Containers/Data/Application/63BEDD56-9EAE-4AD5-A5B8-F897F0461B93/Library/Caches/ExponentExperienceData/@anonymous/MyFirstApp-c93152af-9e6d-411f-978f-37ed9de9c037/ImagePicker/65EACF19-DF28-439D-9284-1262AD8BEB86.jpeg"
+    ],
+    "location": {
+      "lat": 0,
+      "lng": 0
+    }
+  }
+]
