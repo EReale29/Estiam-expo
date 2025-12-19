@@ -57,6 +57,8 @@ export default function TripDetailScreen() {
     const payload = [formattedDate, formattedTime].filter(Boolean).join(' | ');
     return payload ? `[${payload}]` : '';
   };
+  const formatDateLabel = (date?: Date | null) => (date ? formatDisplayDateTime(formatDateForStorage(date), '') : 'Date');
+  const formatTimeLabel = (date?: Date | null) => (date ? formatDisplayDateTime('', formatTimeForStorage(date)) : 'Heure');
   const sortedJournalEntries = useMemo(
     () =>
       [...journalEntries].sort((a, b) => {
@@ -425,17 +427,13 @@ export default function TripDetailScreen() {
                   style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
                   onPress={() => setShowActivityDatePicker(true)}
                   disabled={isActionLoading}>
-                  <Text style={[styles.pickerButtonText, { color: palette.text }]}>
-                    {activityForm.date ? formatDisplayDateTime(activityForm.date, '') : 'Date'}
-                  </Text>
+                  <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatDateLabel(activityDate)}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
                   onPress={() => setShowActivityTimePicker(true)}
                   disabled={isActionLoading}>
-                  <Text style={[styles.pickerButtonText, { color: palette.text }]}>
-                    {activityTime ? formatDisplayDateTime('', activityTime) : 'Heure'}
-                  </Text>
+                  <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatTimeLabel(activityTime)}</Text>
                 </TouchableOpacity>
                 <TextInput
                   style={[styles.input, { borderColor: palette.border, color: palette.text }]}
@@ -594,17 +592,13 @@ export default function TripDetailScreen() {
               style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
               onPress={() => setShowJournalDatePicker(true)}
               disabled={isActionLoading}>
-              <Text style={[styles.pickerButtonText, { color: palette.text }]}>
-                {journalDate ? formatDisplayDateTime(formatDateForStorage(journalDate), '') : 'Date'}
-              </Text>
+              <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatDateLabel(journalDate)}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.pickerButton, { borderColor: palette.border, backgroundColor: palette.surface }]}
               onPress={() => setShowJournalTimePicker(true)}
               disabled={isActionLoading}>
-              <Text style={[styles.pickerButtonText, { color: palette.text }]}>
-                {journalTime ? formatDisplayDateTime('', formatTimeForStorage(journalTime)) : 'Heure'}
-              </Text>
+              <Text style={[styles.pickerButtonText, { color: palette.text }]}>{formatTimeLabel(journalTime)}</Text>
             </TouchableOpacity>
             <TextInput
               multiline
