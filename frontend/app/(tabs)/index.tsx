@@ -126,7 +126,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
 
-        <View style={styles.section}>
+        <View style={[styles.section, styles.quickActionsSection, { borderColor: palette.border }]}>
           <Text style={{ ...styles.sectionTitle, paddingHorizontal: 12, color: palette.text }}>
             {t('home.quickActions')}
           </Text>
@@ -258,6 +258,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 8,
     borderBottomWidth: 1,
+  },
+  quickActionsSection: {
+    borderBottomWidth: 0,
+    borderTopWidth: 1,
+    paddingTop: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
