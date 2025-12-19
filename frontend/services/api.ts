@@ -74,7 +74,8 @@ export const API = {
     const online = await OFFLINE.pingBackend();
     if (online) {
       try {
-        const trips = await http.request<Trip[]>('/trips');
+        const result = await http.request<Trip[] | { trips: Trip[] }>('/trips');
+        const trips = Array.isArray(result) ? result : result?.trips || [];
         await OFFLINE.cacheTrips(trips);
         return trips;
       } catch (error) {
